@@ -21,7 +21,6 @@ const DeleteUserFormModal: React.FC<DeleteUserFormModalProps> = ({ user, onUserD
         const[middleName, setMiddleName] = useState("")
         const[lastName, setLastName] = useState("")
         const[suffixName, setSuffixName] = useState("")
-        const[gender, setGender] = useState("")
         const[birthDate, setBirthDate] = useState("")
         const[username, setUsername] = useState("")
 
@@ -53,7 +52,6 @@ const DeleteUserFormModal: React.FC<DeleteUserFormModalProps> = ({ user, onUserD
             setMiddleName(user.middle_name ?? "")
             setLastName(user.last_name)
             setSuffixName(user.suffix_name ?? "")
-            setGender(user.gender.gender)
             setBirthDate(user.birth_date)
             setUsername(user.username)
         }else {
@@ -97,12 +95,7 @@ const DeleteUserFormModal: React.FC<DeleteUserFormModalProps> = ({ user, onUserD
                         </label>
                         <p className="mt-1 text-sm text-gray-500">{suffixName || 'N/A'}</p>
                     </div>
-                    <div className="mb-4">
-                        <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-                            Gender
-                        </label>
-                        <p className="mt-1 text-sm text-gray-500">{gender}</p>
-                    </div>
+                    {/* Gender removed */}
                 </div>
                 <div className="col-span-2 md:col-span-1">
                     <div className="mb-4">

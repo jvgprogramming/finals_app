@@ -1,13 +1,12 @@
 import { useEffect, useState, type FC, type FormEvent } from 'react';
 import FloatingLabelInput from '../../../components/input/FloatingLabelInput';
 import Modal from '../../../components/Modal';
-import FloatingLabelSelect from '../../../components/select/FloatingLabelSelect';
+// FloatingLabelSelect removed (gender not used)
 import SubmitButton from '../../../components/Button/SubmitButton';
 import CloseButton from '../../../components/Button/CloseButton';
-import GenderService from '../../../services/GenderService';
 import UserService from '../../../services/UserService';
 import type { UserFieldErrors } from '../../../interfaces/UserInterface';
-import type { GenderColumns } from '../../../interfaces/GenderInterface';
+// Gender features removed — no GenderService or GenderInterface used
 import UploadInput from '../../../components/input/UploadInput';
 
 interface AddUserFormModalProps {
@@ -18,8 +17,7 @@ interface AddUserFormModalProps {
 }
 
   const AddUserFormModal: FC<AddUserFormModalProps> = ({ onUserAdded, isOpen, onClose, refreshKey }) => {
-  const [loadingGenders, setLoadingGenders] = useState(false)
-  const [genders, setGenders] = useState<GenderColumns[]>([])
+  // gender-related state removed
 
   const [loadingStore, setLoadingStore] = useState(false)
   const [addUserProfilePicture,setAddUserProfilePicture ] = useState<File| null>(null);
@@ -27,7 +25,7 @@ interface AddUserFormModalProps {
   const [middleName, setMiddleName] = useState('')
   const [lastName, setLastName] = useState('')
   const [suffixName, setSuffixName] = useState('')
-  const [gender, setGender] = useState('')
+  // gender removed
   const [birthDate, setBirthDate] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -49,7 +47,7 @@ interface AddUserFormModalProps {
       formData.append('middle_name', middleName || '')
       formData.append('last_name', lastName)
       formData.append('suffix_name', suffixName || '')
-      formData.append('gender', gender)
+      // gender removed from payload
       formData.append('birth_date', birthDate)
       formData.append('username', username)
       formData.append('password', password)
@@ -63,7 +61,7 @@ interface AddUserFormModalProps {
         setMiddleName('')
         setLastName('')
         setSuffixName('')
-        setGender('')
+        // gender cleared (removed)
         setBirthDate('')
         setUsername('')
         setPassword('')
@@ -71,7 +69,7 @@ interface AddUserFormModalProps {
         setErrors({})
 
         onUserAdded(response.data.message)
-        handleLoadGenders();
+        // genders removed
         refreshKey();
       }else {
         console.error('Unexpected status error occured during adding user:', response.status)
@@ -87,29 +85,9 @@ interface AddUserFormModalProps {
     }
   }
 
-  const handleLoadGenders = async () => {
-    try{
-      setLoadingGenders(true)
-
-      const response = await GenderService.loadGenders()
-
-
-      if(response.status === 200) {
-        setGenders(response.data.genders)
-      }else {
-        console.error('Unexpected status error occured during loading genders:', response.status)
-      }
-    }catch(error) {
-      console.error('Unexpected server error occured during loading genders:', error)
-    }finally {
-      setLoadingGenders(false);
-    }
-  };
-
+  // gender loading logic removed
   useEffect(() => {
-    if (isOpen) {
-      handleLoadGenders();
-    }
+    // no-op
   }, [isOpen]);
 
   return (
@@ -167,33 +145,7 @@ interface AddUserFormModalProps {
                   errors={errors.suffix_name}
                 />
               </div>
-              <div className="mb-4">
-                <FloatingLabelSelect
-                  label="Gender"
-                  name="gender"
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  disabled={loadingGenders}
-                  errors={errors.gender}
-                  required
-                >
-                  {loadingGenders ? (
-                    <option value="">Loading genders...</option>
-                  ) : (
-                    <>
-                      <option value="">Select Gender</option>
-                      {genders.map((genderItem) => (
-                        <option
-                          value={genderItem.gender_id}
-                          key={genderItem.gender_id}
-                        >
-                          {genderItem.gender}
-                        </option>
-                      ))}
-                    </>
-                  )}
-                </FloatingLabelSelect>
-              </div>
+              {/* Gender field removed from form (not relevant) */}
             </div>
             <div className="col-span-2 md:col-span-1">
               <div className="mb-4">

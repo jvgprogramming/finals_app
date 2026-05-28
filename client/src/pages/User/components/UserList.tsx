@@ -147,12 +147,7 @@ useEffect(() => {
                   Full Name
                 </TableCell>
                 
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 text-left font-semibold tracking-wide"
-                >
-                  Gender
-                </TableCell>
+                {/* Gender column removed */}
                 <TableCell
                   isHeader
                   className="px-5 py-3 text-left font-semibold tracking-wide"
@@ -195,9 +190,7 @@ useEffect(() => {
                     <TableCell className="px-5 py-3 text-left">
                       {handleUserFullNameFormat(user)}
                     </TableCell>
-                    <TableCell className="px-5 py-3 text-left">
-                      {user.gender?.gender ?? 'N/A'}
-                    </TableCell>
+                    {/* Gender removed */}
                     <TableCell className="px-5 py-3 text-left">
                       {user.birth_date}
                     </TableCell>

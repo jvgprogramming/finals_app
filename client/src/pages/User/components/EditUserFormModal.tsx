@@ -3,11 +3,10 @@ import CloseButton from "../../../components/Button/CloseButton";
 import SubmitButton from "../../../components/Button/SubmitButton";
 import FloatingLabelInput from "../../../components/input/FloatingLabelInput";
 import Modal from "../../../components/Modal";
-import FloatingLabelSelect from "../../../components/select/FloatingLabelSelect";
-import GenderService from "../../../services/GenderService";
+// FloatingLabelSelect removed (gender not used)
 import UserService from "../../../services/UserService";
 import type { UserColumns, UserFieldErrors } from "../../../interfaces/UserInterface";
-import type { GenderColumns } from "../../../interfaces/GenderInterface";
+// Gender types removed
 import UploadInput from "../../../components/input/UploadInput";
 
 
@@ -22,8 +21,7 @@ interface EditUserFormModalProps {
 
 const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, refreshKey, isOpen, onClose }) => {
 
-    const[loadingGenders, setLoadingGenders] = useState(false)
-    const[genders, setGenders] = useState<GenderColumns[]>([])
+    // gender lists removed
 
     const[existingProfilePicture,setExistingProfilePicture ] = useState<string | null>(null)
     const[editUserProfilePicture, setEditUserProfilePicture] = useState<File| null>(null)
@@ -33,7 +31,7 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
     const[middleName, setMiddleName] = useState("")
     const[lastName, setLastName] = useState("")
     const[suffixName, setSuffixName] = useState("")
-    const[gender, setGender] = useState("")
+    // gender removed
     const[birthDate, setBirthDate] = useState("")
     const[username, setUsername] = useState("")
     const[errors, setErrors] = useState<UserFieldErrors>({})
@@ -57,7 +55,7 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
             formData.append('middle_name', middleName || "")
             formData.append('last_name', lastName)
             formData.append('suffix_name', suffixName || "")
-            formData.append('gender', gender)
+            // gender removed from payload
             formData.append('birth_date', birthDate)
             formData.append('username', username)
 
@@ -70,14 +68,14 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
                 setMiddleName(res.data.user.middle_name ?? "")
                 setLastName(res.data.user.last_name)
                 setSuffixName(res.data.user.suffix_name ?? "")
-                setGender(res.data.user.gender_id)
+                // gender removed
                 setBirthDate(res.data.user.birth_date)
                 setUsername(res.data.user.username)
                 setErrors({});
 
                 onUserUpdate(res.data.message)
 
-                handleLoadGenders();
+                // gender loading removed
                 refreshKey();
             }else {
                 console.error('Unexpected status error occured during updating user:', res.status)
@@ -93,30 +91,7 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
         }
     }
 
-    const handleLoadGenders = async () => {
-    try{
-      setLoadingGenders(true)
-
-      const response = await GenderService.loadGenders()
-
-
-      if(response.status === 200) {
-        setGenders(response.data.genders)
-      }else {
-        console.error('Unexpected status error occured during loading genders:', response.status)
-      }
-    }catch(error) {
-      console.error('Unexpected server error occured during loading genders:', error)
-    }finally {
-      setLoadingGenders(false);
-    }
-  };
-
-    useEffect(() => {
-    if (isOpen) {
-      handleLoadGenders();
-    }
-  }, [isOpen]);
+        // gender loading removed
 
     useEffect(() => {
         if(isOpen){
@@ -129,7 +104,7 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
             setMiddleName(user.middle_name ?? "")
             setLastName(user.last_name)
             setSuffixName(user.suffix_name ?? "")
-            setGender(user.gender.gender_id.toString())
+            // gender removed from user data
             setBirthDate(user.birth_date)
             setUsername(user.username)
         }else {
@@ -203,33 +178,7 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
                         errors={errors.suffix_name}
                         />
                     </div>
-                    <div className="mb-4">
-                        <FloatingLabelSelect
-                        label="Gender"
-                        name="gender"
-                        value={gender}
-                        onChange={(e) => setGender(e.target.value)}
-                        disabled={loadingGenders}
-                        errors={errors.gender}
-                        required
-                        >
-                        {loadingGenders ? (
-                            <option value="">Loading genders...</option>
-                        ) : (
-                            <>
-                            <option value="">Select Gender</option>
-                            {genders.map((genderItem) => (
-                                <option
-                                value={genderItem.gender_id}
-                                key={genderItem.gender_id}
-                                >
-                                {genderItem.gender}
-                                </option>
-                            ))}
-                            </>
-                        )}
-                        </FloatingLabelSelect>
-                    </div>
+                    {/* Gender field removed */}
                 </div>
                 <div className="col-span-2 md:col-span-1">
                     <div className="mb-4">

@@ -16,7 +16,13 @@ class AuthController extends Controller
             'password' => 'required|min:6|max:12',
         ]);
 
-        
+        $user = User::where('username', $validated['username'])->first();
+
+        if (!$user || !\Illuminate\Support\Facades\Hash::check($validated['password'], $user->password)) {
+            return response()->json([
+                'message' => 'Invalid username or password'
+            ], 401);
+        }
 
         $user->tokens()->delete();
         $token = $user->createToken('auth_token')->plainTextToken;
