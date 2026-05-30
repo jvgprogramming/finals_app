@@ -2,46 +2,67 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Models\User;
-use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
+use App\Http\Resources\UserResource;
+use App\Services\AuthService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Controller;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
-    {   
-        $validated = $request->validate([
-            'username' => 'required|min:6|max:12',
-            'password' => 'required|min:6|max:12',
-        ]);
+    public function __construct(
+        protected AuthService $authService
+    ) {}
 
-        $user = User::where('username', $validated['username'])->first();
+    /**
+     * Login endpoint.
+     */
+    public function login(LoginRequest $request): JsonResponse
+    {
+        $result = $this->authService->login(
+            $request->validated('username'),
+            $request->validated('password')
+        );
 
-        if (!$user || !\Illuminate\Support\Facades\Hash::check($validated['password'], $user->password)) {
+        if (!$result) {
             return response()->json([
-                'message' => 'Invalid username or password'
+                'success' => false,
+                'message' => 'Invalid username or password',
             ], 401);
         }
 
-        $user->tokens()->delete();
-        $token = $user->createToken('auth_token')->plainTextToken;
-
         return response()->json([
-            'token' => $token,
-            'user' => $user
+            'success' => true,
+            'message' => 'Login successful',
+            'token' => $result['token'],
+            'user' => new UserResource($result['user']),
         ], 200);
     }
 
-    public function logout(Request $request)
+    /**
+     * Logout endpoint.
+     */
+    public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $this->authService->logout($request->user());
 
-        return response()->json(['message' => 'Logged out successfully'], 200);
+        return response()->json([
+            'success' => true,
+            'message' => 'Logged out successfully',
+        ], 200);
     }
 
-    public function me(Request $request)
+    /**
+     * Get authenticated user.
+     */
+    public function me(Request $request): JsonResponse
     {
-        return response()->json(['user' => $request->user()->load(['gender'])], 200);
+        return response()->json([
+            'success' => true,
+            'message' => 'User retrieved successfully',
+            'user' => new UserResource($this->authService->me($request->user())),
+        ], 200);
     }
 }
+
