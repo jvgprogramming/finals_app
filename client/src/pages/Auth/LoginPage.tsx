@@ -5,20 +5,22 @@ import LoginForm from './components/LoginForm';
 const LoginPage: FC = () => {
   return (
     <AuthPageLayout>
-      <div className="w-full max-w-md rounded-[1.75rem] border border-gray-100 bg-white p-8 shadow-[0_20px_60px_rgba(68,47,32,0.12)]">
-        <div className="mb-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-amber-700">
-            Welcome back
+      <section className="auth-card">
+        <div className="auth-card-header">
+          <p className="auth-card-kicker">Welcome back</p>
+          <h2 className="auth-card-title">Sign in to the portal</h2>
+          <p className="auth-card-subtitle">
+            Sign in with your account and the app will take you to the matching
+            user or admin portal.
           </p>
-          <h2 className="mt-3 text-3xl font-semibold text-gray-900">
-            Sign in to the portal
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-gray-600">
-            Use your admin account to manage users and keep the system in sync.
-          </p>
+          <div className="auth-card-pills">
+            <span>Single sign-in</span>
+            <span>Role-aware routing</span>
+            <span>Secure session restore</span>
+          </div>
         </div>
         <LoginForm />
-      </div>
+      </section>
     </AuthPageLayout>
   );
 };

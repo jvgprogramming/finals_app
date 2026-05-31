@@ -1,5 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
 
 // ==========================================================================
 // Default Mock Data (Nicai's Pastry Premium Confectionery Products)
@@ -142,11 +144,19 @@ const playSuccessSound = () => {
   }
 };
 
-function App() {
+function App({ portalMode = 'user' } = {}) {
   // ==========================================================================
   // App Core States
   // ==========================================================================
-  const [activeView, setActiveView] = useState('customer-home'); // 'customer-home', 'customer-orders', 'admin-dashboard', 'admin-orders', 'admin-products'
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+  const [activeView, setActiveView] = useState(
+    portalMode === 'admin' ? 'admin-dashboard' : 'customer-home',
+  ); // 'customer-home', 'customer-orders', 'admin-dashboard', 'admin-orders', 'admin-products'
+
+  useEffect(() => {
+    setActiveView(portalMode === 'admin' ? 'admin-dashboard' : 'customer-home');
+  }, [portalMode]);
 
   // Data Persistence states
   const [products, setProducts] = useState(() => {
@@ -201,6 +211,11 @@ function App() {
     flavors: 'Vanilla Chiffon, Rich Chocolate Fudge, Mocha Mousse',
     image: '/images/birthday_cake.png',
   });
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   // Save states to LocalStorage on modifications
   useEffect(() => {
@@ -791,6 +806,17 @@ function App() {
                     </span>
                   )}
                 </button>
+                <button
+                  className="nav-link"
+                  onClick={handleLogout}
+                  style={{
+                    border: '1px solid var(--almond)',
+                    background: 'var(--velvet-cream)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Logout
+                </button>
               </nav>
             </div>
           </header>
@@ -1263,6 +1289,17 @@ function App() {
                   }}
                 >
                   Stock Editor
+                </button>
+                <button
+                  className="nav-link"
+                  onClick={handleLogout}
+                  style={{
+                    border: '1px solid var(--almond)',
+                    background: 'var(--velvet-cream)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Logout
                 </button>
               </nav>
             </div>
@@ -2190,61 +2227,6 @@ function App() {
           </main>
         </>
       )}
-
-      {/* ==========================================================================
-         FLOATING REAL-TIME DEMO SWITCHER WIDGET
-         ========================================================================== */}
-      <div className="demo-switcher">
-        <span className="demo-switcher-label">Presenter Mode:</span>
-        <button
-          className={`switcher-btn customer-btn ${activeView.startsWith('customer') ? 'active' : ''}`}
-          onClick={() => {
-            setActiveView('customer-home');
-            handleMarkNotificationsRead('customer');
-          }}
-        >
-          🧁 Customer Portal
-          {notifCounts.customer > 0 && (
-            <span
-              className="badge"
-              style={{
-                position: 'relative',
-                top: '-1px',
-                right: '-4px',
-                marginLeft: '4px',
-                border: 'none',
-              }}
-            >
-              {notifCounts.customer}
-            </span>
-          )}
-        </button>
-        <button
-          className={`switcher-btn admin-btn ${activeView.startsWith('admin') ? 'active' : ''}`}
-          onClick={() => {
-            setActiveView('admin-dashboard');
-            handleMarkNotificationsRead('admin');
-          }}
-        >
-          ⚙️ Admin Panel
-          {notifCounts.admin > 0 && (
-            <span
-              className="badge"
-              style={{
-                position: 'relative',
-                top: '-1px',
-                right: '-4px',
-                marginLeft: '4px',
-                border: 'none',
-                backgroundColor: 'var(--espresso)',
-                color: 'var(--secondary)',
-              }}
-            >
-              {notifCounts.admin}
-            </span>
-          )}
-        </button>
-      </div>
 
       {/* ==========================================================================
          CUSTOMER MODAL 1: PRODUCT CUSTOMIZATION DIALOG

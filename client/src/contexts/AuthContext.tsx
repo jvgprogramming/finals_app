@@ -15,6 +15,7 @@ interface User {
   middle_name?: string;
   profile_picture?: string;
   gender?: { gender: string };
+  role: 'admin' | 'user';
 }
 
 interface AuthContextType {
@@ -22,11 +23,15 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const resolveUserRole = (username: string): 'admin' | 'user' => {
+  return username.toLowerCase() === 'johndoe' ? 'admin' : 'user';
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -42,7 +47,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (savedToken) {
         try {
           const res = await AuthService.me();
-          setUser(res.data.user);
+          setUser({
+            ...res.data.user,
+            role: resolveUserRole(res.data.user.username),
+          });
           setToken(savedToken);
         } catch {
           localStorage.removeItem('auth_token');
@@ -58,9 +66,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (username: string, password: string) => {
     const res = await AuthService.login({ username, password });
     const { token: newToken, user: newUser } = res.data;
+    const normalizedUser: User = {
+      ...newUser,
+      role: resolveUserRole(newUser.username),
+    };
     localStorage.setItem('auth_token', newToken);
     setToken(newToken);
-    setUser(newUser);
+    setUser(normalizedUser);
+    return normalizedUser;
   };
 
   const logout = async () => {
@@ -74,7 +87,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
     }
   };
-
   return (
     <AuthContext.Provider
       value={{

@@ -6,36 +6,37 @@ interface AuthPageLayoutProps {
 
 const AuthPageLayout: FC<AuthPageLayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,248,234,1),_rgba(250,244,236,1)_40%,_rgba(243,235,224,1))] px-4 py-8 text-gray-900">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl overflow-hidden rounded-[2rem] bg-white shadow-2xl ring-1 ring-black/5">
-        <div className="hidden flex-1 flex-col justify-between bg-[linear-gradient(160deg,_#5c3b2e,_#8a5a44_55%,_#c78b63)] p-10 text-white lg:flex">
-          <div>
-            <p className="text-sm uppercase tracking-[0.35em] text-white/75">
-              Nicais Pastry
-            </p>
-            <h1 className="mt-4 max-w-lg text-5xl font-semibold leading-tight">
+    <div className="auth-page">
+      <div className="auth-shell">
+        <aside className="auth-hero">
+          <div className="auth-hero-glow auth-hero-glow-one" />
+          <div className="auth-hero-glow auth-hero-glow-two" />
+          <div className="auth-hero-content">
+            <p className="auth-eyebrow">Nicais Pastry</p>
+            <h1 className="auth-hero-title">
               A warmer way to manage your bakery operations.
             </h1>
-            <p className="mt-6 max-w-md text-sm leading-6 text-white/80">
-              Sign in to keep track of staff, user records, and day-to-day
-              administration in one streamlined portal.
+            <p className="auth-hero-copy">
+              Sign in once and the app sends you to the right workspace for your
+              account, whether you are managing users or browsing as a customer.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-4 text-sm text-white/85">
-            <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-              Inventory
+          <div className="auth-hero-grid">
+            <div className="auth-hero-card">
+              <span className="auth-hero-card-label">Inventory</span>
+              <strong>Fresh stock visibility</strong>
             </div>
-            <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-              Users
+            <div className="auth-hero-card">
+              <span className="auth-hero-card-label">Users</span>
+              <strong>Fast account routing</strong>
             </div>
-            <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-              Orders
+            <div className="auth-hero-card">
+              <span className="auth-hero-card-label">Orders</span>
+              <strong>Clean daily tracking</strong>
             </div>
           </div>
-        </div>
-        <div className="flex w-full max-w-xl items-center justify-center p-6 sm:p-10">
-          {children}
-        </div>
+        </aside>
+        <main className="auth-panel">{children}</main>
       </div>
     </div>
   );
