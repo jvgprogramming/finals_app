@@ -1,14 +1,19 @@
 import type { FC } from 'react';
 import { NavLink } from 'react-router-dom';
+import { UsersIcon } from '@heroicons/react/24/outline';
 
 interface NavItem {
   label: string;
-  icon: string;
+  icon: any;
   to: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Users',     icon: '👥', to: '/users' },
+  {
+    label: 'Users',
+    icon: <UsersIcon style={{ width: 18, height: 18 }} aria-hidden />,
+    to: '/',
+  },
 ];
 
 const AppSidebar: FC = () => {
@@ -42,7 +47,13 @@ const AppSidebar: FC = () => {
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <div style={{ padding: '0 2px 14px', color: 'var(--color-cocoa)', fontSize: 12 }}>
+        <div
+          style={{
+            padding: '0 2px 14px',
+            color: 'var(--color-cocoa)',
+            fontSize: 12,
+          }}
+        >
           Frontend only preview mode
         </div>
       </div>

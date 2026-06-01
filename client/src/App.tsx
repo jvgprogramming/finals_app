@@ -2,100 +2,29 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import DEFAULT_PRODUCTS from './data/products';
+import LoginForm from './pages/Auth/components/LoginForm';
+import {
+  BellIcon,
+  ShoppingCartIcon,
+  MagnifyingGlassIcon,
+  CheckIcon,
+  ExclamationTriangleIcon,
+  MapPinIcon,
+  CalendarDaysIcon,
+  ClockIcon,
+  PhoneIcon,
+  HomeIcon,
+  PhotoIcon,
+  UserIcon,
+  CameraIcon,
+  SparklesIcon,
+  XMarkIcon,
+  CurrencyDollarIcon,
+  LightBulbIcon,
+  ChartBarIcon,
+} from '@heroicons/react/24/outline';
 
-// ==========================================================================
-// Default Mock Data (Nicai's Pastry Premium Confectionery Products)
-// ==========================================================================
-const DEFAULT_PRODUCTS = [
-  {
-    id: 1,
-    name: 'Pastel Dream Floral Cake',
-    price: 1250,
-    description:
-      'An elegant minimalist birthday cake styled with smooth vanilla cream frosting and handcrafted pastel sugar flowers. Perfect for warm, beautiful celebrations.',
-    category: 'Birthday Cakes',
-    sizes: ['Personal 6"', 'Celebration 8"', 'Grand Party 10"'],
-    flavors: ['Classic Vanilla', 'Strawberry Dream', 'Salted Caramel Fudge'],
-    image: '/images/birthday_cake.png',
-    available: true,
-  },
-  {
-    id: 2,
-    name: 'Golden Leaf Wedding Tier',
-    price: 3800,
-    description:
-      'A majestic multi-tiered white customized celebration cake beautifully adorned with brushed gold leaf details and delicate ivory sugar blooms. Crafted for memorable milestones.',
-    category: 'Customized Cakes',
-    sizes: ['2-Tier (Small)', '3-Tier (Standard)', '3-Tier (Grand)'],
-    flavors: [
-      'Red Velvet Fudge',
-      'Dark Chocolate Ganache',
-      'Lemon Elderflower Chiffon',
-    ],
-    image: '/images/customized_cake.png',
-    available: true,
-  },
-  {
-    id: 3,
-    name: 'Double Fudge Dedication Cake',
-    price: 850,
-    description:
-      'A rich, moist chocolate chiffon cake wrapped in dense fudge icing, finished with a beautifully piped chocolate border and a spacious smooth center for your custom message.',
-    category: 'Dedication Cakes',
-    sizes: ['8" Standard', '10" Party Size', '12" Grand Celebration'],
-    flavors: [
-      'Velvet Chocolate Fudge',
-      'Dark Caramel Mocha',
-      'Hazelnut Cocoa Praline',
-    ],
-    image: '/images/dedication_cake.png',
-    available: true,
-  },
-  {
-    id: 4,
-    name: "Confectioner's Pastry Platter",
-    price: 680,
-    description:
-      'A luxurious selection of premium French pastries. Features buttery flaky croissants, artisanal danishes, and a colorful assortment of French almond macarons.',
-    category: 'Pastries',
-    sizes: ['Standard Platter (12pcs)', 'Grand Sharing Platter (24pcs)'],
-    flavors: [
-      "Chef's Sweet Assortment",
-      'Almond Berry Fusion',
-      'Rich Cocoa & Butter Selection',
-    ],
-    image: '/images/french_pastries.png',
-    available: true,
-  },
-  {
-    id: 5,
-    name: 'Artisanal Brioche Breads',
-    price: 220,
-    description:
-      'Soft, buttery brioche loaves baked fresh daily. Made with premium French butter and honey. Offers a gorgeous golden crust and a tender, pillowy crumb.',
-    category: 'Breads',
-    sizes: ['Single Loaf', 'Family Pack (2 Loaves)'],
-    flavors: [
-      'Butter Honey Original',
-      'Cinnamon Swirl',
-      'Parmesan Herb Garlic',
-    ],
-    image: '/images/french_pastries.png',
-    available: true,
-  },
-  {
-    id: 6,
-    name: 'Strawberry Fields Gateau',
-    price: 980,
-    description:
-      'A luxurious specialty dessert featuring layers of light sponge cake, fresh vanilla whipped cream, and organic glazed strawberries. Refreshing, vibrant, and delicious.',
-    category: 'Specialty Desserts',
-    sizes: ['6" Personal', '8" Celebration'],
-    flavors: ['Vanilla Strawberry Chantilly', 'Chocolate Covered Strawberry'],
-    image: '/images/birthday_cake.png',
-    available: true,
-  },
-];
 
 const CATEGORIES = [
   'All',
@@ -148,7 +77,8 @@ function App({ portalMode = 'user' } = {}) {
   // ==========================================================================
   // App Core States
   // ==========================================================================
-  const { logout } = useAuth();
+  const { logout, isLoading, isAuthenticated } = useAuth();
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState(
     portalMode === 'admin' ? 'admin-dashboard' : 'customer-home',
@@ -214,7 +144,8 @@ function App({ portalMode = 'user' } = {}) {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login', { replace: true });
+    // stay on landing page after logout
+    setIsLoginOpen(false);
   };
 
   // Save states to LocalStorage on modifications
@@ -243,6 +174,27 @@ function App({ portalMode = 'user' } = {}) {
       return () => clearTimeout(timer);
     }
   }, [toasts]);
+
+  // If the login flow set a flag to open checkout, open it and clear flag
+  useEffect(() => {
+    try {
+      const open = localStorage.getItem('openCheckout');
+      if (open === '1') {
+        setIsCheckoutOpen(true);
+        localStorage.removeItem('openCheckout');
+      }
+    } catch (e) {}
+  }, []);
+
+  // If a page requested login (pendingCheckout flag), open the login modal
+  useEffect(() => {
+    try {
+      const pending = localStorage.getItem('pendingCheckout');
+      if (pending === '1') {
+        setIsLoginOpen(true);
+      }
+    } catch (e) {}
+  }, []);
 
   // ==========================================================================
   // Customer Functions
@@ -362,6 +314,29 @@ function App({ portalMode = 'user' } = {}) {
       'admin-live',
       newOrder,
     );
+  };
+
+  const handleProceedCheckout = () => {
+    if (!isAuthenticated) {
+      // remember user intended to checkout and redirect to login
+      localStorage.setItem('pendingCheckout', '1');
+      setIsLoginOpen(true);
+      return;
+    }
+    setIsCheckoutOpen(true);
+  };
+
+  const handleLoginSuccess = (user) => {
+    setIsLoginOpen(false);
+    if (user.role === 'admin') {
+      navigate('/admin');
+      return;
+    }
+    const pending = localStorage.getItem('pendingCheckout');
+    if (pending) {
+      localStorage.removeItem('pendingCheckout');
+      setIsCheckoutOpen(true);
+    }
   };
 
   // Helper to add temporary bottom-right toast messages
@@ -707,8 +682,8 @@ function App({ portalMode = 'user' } = {}) {
       <div className="toast-container">
         {toasts.map((toast) => (
           <div key={toast.id} className="alert-toast">
-            <div className="alert-toast-content">
-              <span>🔔</span>
+              <div className="alert-toast-content">
+              <BellIcon style={{ width: 20, height: 20 }} aria-hidden />
               <div>
                 <strong>Notification</strong>
                 <p style={{ fontSize: '12px', opacity: 0.9 }}>{toast.text}</p>
@@ -799,24 +774,38 @@ function App({ portalMode = 'user' } = {}) {
                   className="btn-icon"
                   onClick={() => setIsCartOpen(true)}
                 >
-                  🛒
+                  <ShoppingCartIcon style={{ width: 20, height: 20 }} aria-hidden />
                   {cart.length > 0 && (
                     <span className="badge">
                       {cart.reduce((sum, item) => sum + item.quantity, 0)}
                     </span>
                   )}
                 </button>
-                <button
-                  className="nav-link"
-                  onClick={handleLogout}
-                  style={{
-                    border: '1px solid var(--almond)',
-                    background: 'var(--velvet-cream)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Logout
-                </button>
+                {!isAuthenticated ? (
+                  <button
+                    className="nav-link"
+                    onClick={() => setIsLoginOpen(true)}
+                    style={{
+                      border: '1px solid var(--almond)',
+                      background: 'var(--velvet-cream)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Login
+                  </button>
+                ) : (
+                  <button
+                    className="nav-link"
+                    onClick={handleLogout}
+                    style={{
+                      border: '1px solid var(--almond)',
+                      background: 'var(--velvet-cream)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Logout
+                  </button>
+                )}
               </nav>
             </div>
           </header>
@@ -839,7 +828,7 @@ function App({ portalMode = 'user' } = {}) {
                     {/* Search and Filters Bar */}
                     <div className="search-filter-bar">
                       <div className="search-input-wrapper">
-                        <span>🔍</span>
+                        <MagnifyingGlassIcon style={{ width: 18, height: 18 }} aria-hidden />
                         <input
                           type="text"
                           placeholder="Search for cakes, pastries, breads..."
@@ -977,7 +966,7 @@ function App({ portalMode = 'user' } = {}) {
                         border: '1px solid var(--almond)',
                       }}
                     >
-                      <span style={{ fontSize: '48px', opacity: 0.3 }}>🍰</span>
+                      <SparklesIcon style={{ fontSize: '48px', width: 48, height: 48, opacity: 0.3 }} aria-hidden />
                       <h4 style={{ margin: '16px 0 8px', fontSize: '20px' }}>
                         No orders placed yet!
                       </h4>
@@ -1058,7 +1047,7 @@ function App({ portalMode = 'user' } = {}) {
                                       className={`progress-step ${stepClass}`}
                                     >
                                       <div className="step-node">
-                                        {idx < activeIndex ? '✓' : ''}
+                                        {idx < activeIndex ? <CheckIcon style={{ width: 14, height: 14 }} aria-hidden /> : ''}
                                       </div>
                                       <span className="step-label">
                                         {label}
@@ -1072,7 +1061,7 @@ function App({ portalMode = 'user' } = {}) {
 
                           {order.status === 'Declined' && (
                             <div className="order-remarks-alert">
-                              ⚠️ <strong>Bakery Notification:</strong> This
+                              <ExclamationTriangleIcon style={{ width: 18, height: 18 }} aria-hidden /> <strong>Bakery Notification:</strong> This
                               order was declined. <br />
                               <em>
                                 Remarks: "
@@ -1151,16 +1140,16 @@ function App({ portalMode = 'user' } = {}) {
                                   marginBottom: '8px',
                                 }}
                               >
-                                📍 <strong>Type:</strong>{' '}
+                                <MapPinIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Type:</strong>{' '}
                                 {order.type === 'delivery'
                                   ? 'Home Delivery'
                                   : 'Store Pickup'}
                                 <br />
-                                📅 <strong>Preferred Date:</strong> {order.date}
+                                <CalendarDaysIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Preferred Date:</strong> {order.date}
                                 <br />
-                                🕒 <strong>Preferred Time:</strong> {order.time}
+                                <ClockIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Preferred Time:</strong> {order.time}
                                 <br />
-                                📞 <strong>Contact:</strong>{' '}
+                                <PhoneIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Contact:</strong>{' '}
                                 {order.customerPhone}
                               </p>
                               {order.type === 'delivery' && (
@@ -1172,7 +1161,7 @@ function App({ portalMode = 'user' } = {}) {
                                     paddingTop: '6px',
                                   }}
                                 >
-                                  🏡 <strong>Address:</strong> {order.address}
+                                  <HomeIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Address:</strong> {order.address}
                                 </p>
                               )}
                               <div
@@ -1292,14 +1281,14 @@ function App({ portalMode = 'user' } = {}) {
                 </button>
                 <button
                   className="nav-link"
-                  onClick={handleLogout}
+                  onClick={!isAuthenticated ? () => setIsLoginOpen(true) : handleLogout}
                   style={{
                     border: '1px solid var(--almond)',
                     background: 'var(--velvet-cream)',
                     cursor: 'pointer',
                   }}
                 >
-                  Logout
+                  {!isAuthenticated ? 'Login' : 'Logout'}
                 </button>
               </nav>
             </div>
@@ -1639,7 +1628,7 @@ function App({ portalMode = 'user' } = {}) {
                               margin: 'auto',
                             }}
                           >
-                            <span>🎉</span>
+                            <SparklesIcon style={{ width: 20, height: 20 }} aria-hidden />
                             <p style={{ fontSize: '14px', marginTop: '8px' }}>
                               Approval list is fully cleared!
                             </p>
@@ -2248,7 +2237,7 @@ function App({ portalMode = 'user' } = {}) {
           onClose={() => setIsCartOpen(false)}
           onUpdateQty={handleUpdateCartQty}
           onRemove={handleRemoveCartItem}
-          onProceedCheckout={() => setIsCheckoutOpen(true)}
+          onProceedCheckout={handleProceedCheckout}
         />
       )}
 
@@ -2275,6 +2264,25 @@ function App({ portalMode = 'user' } = {}) {
           onProgress={handleProgressOrder}
         />
       )}
+
+        {/* Login Modal (opens instead of redirecting to /login) */}
+        {isLoginOpen && (
+          <div className="modal-backdrop" onClick={() => setIsLoginOpen(false)}>
+            <div
+              className="modal-wrapper"
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: '420px' }}
+            >
+              <button className="modal-close" onClick={() => setIsLoginOpen(false)}>
+                ×
+              </button>
+              <div className="checkout-modal-inner">
+                <h3 className="modal-title">Sign in</h3>
+                <LoginForm onSuccess={handleLoginSuccess} />
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
@@ -2432,6 +2440,18 @@ function ProductModal({ product, onClose, onAddToCart }) {
   );
 }
 
+// Resume checkout if login set a flag
+// (This runs once when App mounts in the browser)
+if (typeof window !== 'undefined') {
+  try {
+    const open = localStorage.getItem('openCheckout');
+    if (open === '1') {
+      // remove flag so it doesn't reopen repeatedly
+      localStorage.removeItem('openCheckout');
+    }
+  } catch (e) {}
+}
+
 // ==========================================================================
 // Helper Sub-Component 2: Shopping Cart Drawer
 // ==========================================================================
@@ -2452,7 +2472,7 @@ function CartDrawer({
       <div className="cart-drawer-overlay" onClick={onClose}></div>
       <div className="cart-drawer">
         <div className="cart-header">
-          <h3 className="cart-title">🍰 Your Basket</h3>
+          <h3 className="cart-title"><PhotoIcon style={{ width: 20, height: 20, marginRight: 8 }} aria-hidden /> Your Basket</h3>
           <button className="cart-close-btn" onClick={onClose}>
             ×
           </button>
@@ -2461,7 +2481,7 @@ function CartDrawer({
         <div className="cart-body">
           {cart.length === 0 ? (
             <div className="cart-empty">
-              <span className="cart-empty-icon">🛒</span>
+              <ShoppingCartIcon style={{ width: 36, height: 36 }} className="cart-empty-icon" aria-hidden />
               <h4>Your basket is currently empty</h4>
               <p style={{ fontSize: '13px', marginTop: '6px' }}>
                 Browse our catalog to select delicious pastries and customize
@@ -2686,7 +2706,7 @@ function CheckoutModal({ cart, onClose, onSubmit }) {
                       setForm((prev) => ({ ...prev, type: 'pickup' }))
                     }
                   >
-                    🏪 Store Pickup (₱0)
+                    <HomeIcon style={{ width: 16, height: 16 }} aria-hidden /> Store Pickup (₱0)
                   </div>
                   <div
                     className={`toggle-option ${form.type === 'delivery' ? 'active' : ''}`}
@@ -2694,7 +2714,7 @@ function CheckoutModal({ cart, onClose, onSubmit }) {
                       setForm((prev) => ({ ...prev, type: 'delivery' }))
                     }
                   >
-                    🏡 Home Delivery (₱50)
+                    <HomeIcon style={{ width: 16, height: 16 }} aria-hidden /> Home Delivery (₱50)
                   </div>
                 </div>
 
@@ -2798,7 +2818,7 @@ function CheckoutModal({ cart, onClose, onSubmit }) {
                         onChange={handleReceiptChange}
                         required={form.paymentMethod !== 'COD'}
                       />
-                      <span className="upload-icon">📷</span>
+                      <CameraIcon style={{ width: 18, height: 18 }} className="upload-icon" aria-hidden />
                       <span className="upload-text">
                         {form.receiptImg
                           ? 'Change Attached Slip'
@@ -2918,7 +2938,7 @@ function CheckoutModal({ cart, onClose, onSubmit }) {
                         border: '1px solid rgba(212, 124, 106, 0.15)',
                       }}
                     >
-                      💡 <strong>Mobile Payment Details:</strong> Send the exact
+                      <LightBulbIcon style={{ width: 16, height: 16 }} aria-hidden /> <strong>Mobile Payment Details:</strong> Send the exact
                       amount to GCash / PayMaya: <strong>0917-123-4567</strong>{' '}
                       (Nicai S.) and upload the payment slip image above!
                     </div>
@@ -3004,26 +3024,26 @@ function AdminDetailModal({ order, onClose, onAccept, onDecline, onProgress }) {
                   marginBottom: '20px',
                 }}
               >
-                👤 <strong>Name:</strong> {order.customerName}
+                <UserIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Name:</strong> {order.customerName}
                 <br />
-                📞 <strong>Phone:</strong> {order.customerPhone}
+                <PhoneIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Phone:</strong> {order.customerPhone}
                 <br />
-                📅 <strong>Requested Date:</strong> {order.date}
+                <CalendarDaysIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Requested Date:</strong> {order.date}
                 <br />
-                🕒 <strong>Requested Time:</strong> {order.time}
+                <ClockIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Requested Time:</strong> {order.time}
                 <br />
-                📍 <strong>Fulfillment:</strong>{' '}
+                <MapPinIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Fulfillment:</strong>{' '}
                 {order.type === 'delivery' ? 'Home Delivery' : 'Store Pickup'}
                 <br />
                 {order.type === 'delivery' && (
                   <>
-                    🏡 <strong>Delivery Address:</strong> {order.address}
+                    <HomeIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Delivery Address:</strong> {order.address}
                     <br />
                   </>
                 )}
-                💵 <strong>Payment Method:</strong> {order.paymentMethod}
+                <CurrencyDollarIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Payment Method:</strong> {order.paymentMethod}
                 <br />
-                📊 <strong>Current Status:</strong>{' '}
+                <ChartBarIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Current Status:</strong>{' '}
                 <span
                   className={`status-badge ${order.status.toLowerCase()}`}
                   style={{ fontSize: '10px', padding: '2px 8px' }}
@@ -3316,7 +3336,7 @@ function AdminDetailModal({ order, onClose, onAccept, onDecline, onProgress }) {
                       fontSize: '13.5px',
                     }}
                   >
-                    💵 <strong>Cash Payment Method:</strong> Order is to be
+                    <CurrencyDollarIcon style={{ width: 18, height: 18 }} aria-hidden /> <strong>Cash Payment Method:</strong> Order is to be
                     settled via Cash on Delivery or Cash on Pickup. No slip
                     verification required.
                   </div>

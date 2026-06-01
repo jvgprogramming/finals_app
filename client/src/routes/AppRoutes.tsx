@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import App from '../App';
-import LoginPage from '../pages/Auth/LoginPage';
 import ProtectedRoute from './ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -31,7 +30,7 @@ const LoadingScreen = () => (
 
 const AppRoutes = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const homePath = user?.role === 'admin' ? '/admin' : '/users';
+  const homePath = '/';
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -39,26 +38,8 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <Navigate to={isAuthenticated ? homePath : '/login'} replace />
-        }
-      />
-      <Route
-        path="/login"
-        element={
-          isAuthenticated ? <Navigate to={homePath} replace /> : <LoginPage />
-        }
-      />
-      <Route
-        path="/users"
-        element={
-          <ProtectedRoute requiredRole="user">
-            <App portalMode="user" />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/" element={<App portalMode="user" />} />
+      {/* Login is presented as a modal in the landing App; no dedicated /login route */}
       <Route
         path="/admin"
         element={
@@ -67,12 +48,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="*"
-        element={
-          <Navigate to={isAuthenticated ? homePath : '/login'} replace />
-        }
-      />
+      <Route path="*" element={<Navigate to={homePath} replace />} />
     </Routes>
   );
 };

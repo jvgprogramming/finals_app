@@ -1,13 +1,30 @@
 import { useState, type FC, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
+import {
+  UserIcon,
+  LockClosedIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  ExclamationTriangleIcon,
+} from '@heroicons/react/24/outline';
+import AuthService from '../../../services/AuthService';
+import { CheckIcon } from '@heroicons/react/24/outline';
 
-const LoginForm: FC = () => {
+type Props = {
+  onSuccess?: (user: any) => void;
+};
+
+const LoginForm: FC<Props> = ({ onSuccess }) => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const [isRegister, setIsRegister] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -23,8 +40,41 @@ const LoginForm: FC = () => {
 
     setIsLoading(true);
     try {
+      if (isRegister) {
+        if (!firstName.trim() || !lastName.trim()) {
+          setError('Please provide your full name.');
+          setIsLoading(false);
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError('Passwords do not match.');
+          setIsLoading(false);
+          return;
+        }
+        await AuthService.register({
+          username: username.trim(),
+          password,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+        });
+        // auto-login after register
+      }
+
       const user = await login(username.trim(), password);
-      navigate(user.role === 'admin' ? '/admin' : '/users', { replace: true });
+      const pending = localStorage.getItem('pendingCheckout');
+      if (onSuccess) {
+        // parent will handle navigation/modal closing and checkout resume
+        onSuccess(user);
+        return;
+      }
+
+      if (pending && user.role === 'user') {
+        localStorage.removeItem('pendingCheckout');
+        localStorage.setItem('openCheckout', '1');
+        navigate('/', { replace: true });
+      } else {
+        navigate(user.role === 'admin' ? '/admin' : '/', { replace: true });
+      }
     } catch (err: any) {
       const msg =
         err?.response?.data?.message ??
@@ -37,13 +87,55 @@ const LoginForm: FC = () => {
 
   return (
     <form className="auth-form" onSubmit={handleSubmit} noValidate>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+        <button
+          type="button"
+          onClick={() => setIsRegister(false)}
+          className={`btn-sm ${!isRegister ? 'active' : ''}`}
+        >
+          Sign In
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsRegister(true)}
+          className={`btn-sm ${isRegister ? 'active' : ''}`}
+        >
+          Create Account
+        </button>
+      </div>
+      {isRegister ? (
+        <>
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">First name</label>
+              <input
+                type="text"
+                className="form-control"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Last name</label>
+              <input
+                type="text"
+                className="form-control"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+        </>
+      ) : null}
       {/* Username */}
       <div className="form-group">
         <label className="form-label" htmlFor="username">
           Username
         </label>
         <div className="form-control-icon-wrapper auth-control">
-          <span className="form-control-icon">👤</span>
+          <UserIcon style={{ width: 18, height: 18 }} className="form-control-icon" aria-hidden />
           <input
             id="username"
             type="text"
@@ -60,13 +152,30 @@ const LoginForm: FC = () => {
         </div>
       </div>
 
+      {isRegister && (
+        <div className="form-group">
+          <label className="form-label" htmlFor="confirmPassword">
+            Confirm Password
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            className="form-control"
+            placeholder="Repeat password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required={isRegister}
+          />
+        </div>
+      )}
+
       {/* Password */}
       <div className="form-group">
         <label className="form-label" htmlFor="password">
           Password
         </label>
         <div className="form-control-icon-wrapper auth-control auth-control-password">
-          <span className="form-control-icon">🔒</span>
+          <LockClosedIcon style={{ width: 18, height: 18 }} className="form-control-icon" aria-hidden />
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
@@ -87,7 +196,7 @@ const LoginForm: FC = () => {
             tabIndex={-1}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
-            {showPassword ? '🙈' : '👁️'}
+            {showPassword ? <EyeSlashIcon style={{ width: 18, height: 18 }} aria-hidden /> : <EyeIcon style={{ width: 18, height: 18 }} aria-hidden />}
           </button>
         </div>
       </div>
@@ -95,7 +204,7 @@ const LoginForm: FC = () => {
       {/* Error message */}
       {error && (
         <div className="auth-error">
-          <span>⚠️</span>
+          <ExclamationTriangleIcon style={{ width: 18, height: 18 }} aria-hidden />
           <span>{error}</span>
         </div>
       )}
@@ -111,16 +220,18 @@ const LoginForm: FC = () => {
         disabled={isLoading}
       >
         {isLoading ? (
-          <>
-            <span
-              className="spinner spinner-sm"
-              style={{ borderTopColor: 'white' }}
-            />
-            Signing In…
-          </>
-        ) : (
-          <>Sign In</>
-        )}
+            <>
+              <span
+                className="spinner spinner-sm"
+                style={{ borderTopColor: 'white' }}
+              />
+              {isRegister ? 'Creating Account…' : 'Signing In…'}
+            </>
+          ) : isRegister ? (
+            <>Create Account</>
+          ) : (
+            <>Sign In</>
+          )}
       </button>
     </form>
   );

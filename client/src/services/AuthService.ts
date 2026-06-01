@@ -15,6 +15,10 @@ const AuthService = {
     const response = await AxiosInstance.get('/auth/me');
     return response;
   },
+  register: async (payload: any) => {
+    const response = await AxiosInstance.post('/auth/register', payload);
+    return response;
+  },
 };
 
 export default AuthService;
