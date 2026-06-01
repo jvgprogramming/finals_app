@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Notification;
+use App\Models\Order;
+use App\Policies\NotificationPolicy;
+use App\Policies\OrderPolicy;
 use App\Repositories\UserRepository;
 use App\Repositories\UserRepositoryInterface;
 use App\Services\AuthService;
@@ -33,6 +37,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Register policies
+        \Illuminate\Support\Facades\Gate::policy(Order::class, OrderPolicy::class);
+        \Illuminate\Support\Facades\Gate::policy(Notification::class, NotificationPolicy::class);
     }
 }

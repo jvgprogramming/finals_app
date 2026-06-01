@@ -1,22 +1,51 @@
-import React, { useState } from 'react';
+// @ts-nocheck
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DEFAULT_PRODUCTS from '../../data/products';
+import ProductService from '../../services/ProductService';
+import { resolveProductImageUrl } from '../../utils/imageUrl';
+import { formatPeso } from '../../utils/currency';
 import './catalog.css';
 
 const CatalogPage: React.FC = () => {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState(['All']);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const categories = Array.from(
-    new Set(['All', ...DEFAULT_PRODUCTS.map((p) => p.category)]),
-  );
+  // Fetch products and categories from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Fetch both categories and products
+        const [fetchedCategories, fetchedProducts] = await Promise.all([
+          ProductService.getCategories(),
+          ProductService.getProducts(),
+        ]);
 
-  const filtered = DEFAULT_PRODUCTS.filter((p) => {
+        setCategories(['All', ...fetchedCategories.map(c => c.name)]);
+        setProducts(fetchedProducts);
+      } catch (err) {
+        console.error('Error fetching catalog data:', err);
+        setError('Failed to load products. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const filtered = products.filter((p: any) => {
     const matchesQuery =
       p.name.toLowerCase().includes(query.toLowerCase()) ||
       p.description.toLowerCase().includes(query.toLowerCase());
-    const matchesCat = category === 'All' || p.category === category;
+    const matchesCat = category === 'All' || p.category?.name === category;
     return matchesQuery && matchesCat;
   });
 
@@ -60,15 +89,40 @@ const CatalogPage: React.FC = () => {
       </section>
 
       <section className="product-grid">
+        {loading && (
+          <div className="loading-state">
+            <p>Loading products...</p>
+          </div>
+        )}
+        {error && (
+          <div className="error-state">
+            <p>{error}</p>
+            <button 
+              className="btn-sm" 
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {!loading && filtered.length === 0 && !error && (
+          <div className="empty-state">
+            <p>No products found.</p>
+          </div>
+        )}
         {filtered.map((p) => (
           <article key={p.id} className="product-card">
-            <img src={p.image} alt={p.name} className="product-thumb" />
+            <img
+              src={resolveProductImageUrl(p.image_url) || '/images/placeholder.png'}
+              alt={p.name}
+              className="product-thumb"
+            />
             <div className="product-body">
               <h3>{p.name}</h3>
-              <p className="muted">{p.category}</p>
+              <p className="muted">{p.category?.name}</p>
               <p className="desc">{p.description}</p>
               <div className="product-meta">
-                <strong>₱{p.price.toLocaleString()}</strong>
+                <strong>{formatPeso(p.price)}</strong>
                 <button
                   className="btn-sm"
                   onClick={() => {

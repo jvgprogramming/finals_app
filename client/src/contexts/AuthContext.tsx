@@ -18,19 +18,35 @@ interface User {
   role: 'admin' | 'user';
 }
 
+export interface RegisterPayload {
+  username: string;
+  password: string;
+  password_confirmation: string;
+  first_name: string;
+  last_name: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<User>;
+  register: (payload: RegisterPayload) => Promise<User>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const resolveUserRole = (username: string): 'admin' | 'user' => {
-  return username.toLowerCase() === 'johndoe' ? 'admin' : 'user';
+/** Map API role (admin | customer) to client role (admin | user). */
+const normalizeRole = (apiUser: {
+  role?: string;
+  username: string;
+}): 'admin' | 'user' => {
+  if (apiUser.role === 'admin') return 'admin';
+  // Legacy seeded admin before role column was set
+  if (apiUser.username?.toLowerCase() === 'johndoe') return 'admin';
+  return 'user';
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -49,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const res = await AuthService.me();
           setUser({
             ...res.data.user,
-            role: resolveUserRole(res.data.user.username),
+            role: normalizeRole(res.data.user),
           });
           setToken(savedToken);
         } catch {
@@ -63,17 +79,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     restoreSession();
   }, []);
 
-  const login = async (username: string, password: string) => {
-    const res = await AuthService.login({ username, password });
-    const { token: newToken, user: newUser } = res.data;
+  const applySession = (newToken: string, newUser: Record<string, unknown>) => {
     const normalizedUser: User = {
-      ...newUser,
-      role: resolveUserRole(newUser.username),
+      ...(newUser as unknown as User),
+      role: normalizeRole(newUser as { role?: string; username: string }),
     };
     localStorage.setItem('auth_token', newToken);
     setToken(newToken);
     setUser(normalizedUser);
     return normalizedUser;
+  };
+
+  const login = async (username: string, password: string) => {
+    const res = await AuthService.login({ username, password });
+    const { token: newToken, user: newUser } = res.data;
+    return applySession(newToken, newUser);
+  };
+
+  const register = async (payload: RegisterPayload) => {
+    const res = await AuthService.register(payload);
+    const { token: newToken, user: newUser } = res.data;
+    return applySession(newToken, newUser);
   };
 
   const logout = async () => {
@@ -95,6 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: !!token && !!user,
         isLoading,
         login,
+        register,
         logout,
       }}
     >

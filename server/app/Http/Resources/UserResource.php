@@ -23,6 +23,7 @@ class UserResource extends JsonResource
             'birth_date' => $this->birth_date?->format('Y-m-d'),
             'age' => $this->age,
             'username' => $this->username,
+            'role' => $this->role,
             'profile_picture' => $this->profile_picture ? url('storage/profile_pictures/' . $this->profile_picture) : null,
         ];
     }

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import App from '../App';
+import CustomerApp from '../pages/Customer/CustomerApp';
+import AdminApp from '../pages/Admin/AdminApp';
 import ProtectedRoute from './ProtectedRoute';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -28,9 +29,17 @@ const LoadingScreen = () => (
   </div>
 );
 
+/** Send authenticated admins to /admin instead of the customer landing page. */
+const CustomerHome = () => {
+  const { isAuthenticated, user } = useAuth();
+  if (isAuthenticated && user?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+  return <CustomerApp />;
+};
+
 const AppRoutes = () => {
-  const { isAuthenticated, isLoading, user } = useAuth();
-  const homePath = '/';
+  const { isLoading } = useAuth();
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -38,17 +47,16 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<App portalMode="user" />} />
-      {/* Login is presented as a modal in the landing App; no dedicated /login route */}
+      <Route path="/" element={<CustomerHome />} />
       <Route
         path="/admin"
         element={
           <ProtectedRoute requiredRole="admin">
-            <App portalMode="admin" />
+            <AdminApp />
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to={homePath} replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

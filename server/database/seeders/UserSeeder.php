@@ -23,6 +23,7 @@ class UserSeeder extends Seeder
             'username' => 'johndoe',
             'password' => bcrypt('password123'),
             'profile_picture' => null,
+            'role' => 'admin',
         ]);
 
         // Create additional test users

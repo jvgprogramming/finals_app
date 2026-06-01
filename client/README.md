@@ -1,3 +1,18 @@
+# Nicai's Pastry — Client
+
+## Local setup
+
+1. Start the API from `server/` (`php artisan serve`).
+2. Seed the database: `php artisan migrate:fresh --seed`
+3. Run the client: `npm run dev`
+
+## Routes
+
+- `/` — Customer catalog (guests can browse; login required for checkout)
+- `/admin` — Admin dashboard (orders, products). Login: `johndoe` / `password123`
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

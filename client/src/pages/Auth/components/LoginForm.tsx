@@ -8,15 +8,13 @@ import {
   EyeSlashIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
-import AuthService from '../../../services/AuthService';
-import { CheckIcon } from '@heroicons/react/24/outline';
 
 type Props = {
   onSuccess?: (user: any) => void;
 };
 
 const LoginForm: FC<Props> = ({ onSuccess }) => {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
 
   const [isRegister, setIsRegister] = useState(false);
@@ -51,13 +49,28 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
           setIsLoading(false);
           return;
         }
-        await AuthService.register({
+        const registeredUser = await register({
           username: username.trim(),
           password,
+          password_confirmation: confirmPassword,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
         });
-        // auto-login after register
+        const pending = localStorage.getItem('pendingCheckout');
+        if (onSuccess) {
+          onSuccess(registeredUser);
+          return;
+        }
+        if (pending && registeredUser.role === 'user') {
+          localStorage.removeItem('pendingCheckout');
+          localStorage.setItem('openCheckout', '1');
+          navigate('/', { replace: true });
+        } else {
+          navigate(registeredUser.role === 'admin' ? '/admin' : '/', {
+            replace: true,
+          });
+        }
+        return;
       }
 
       const user = await login(username.trim(), password);
@@ -76,9 +89,12 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
         navigate(user.role === 'admin' ? '/admin' : '/', { replace: true });
       }
     } catch (err: any) {
+      const validationErrors = err?.response?.data?.errors;
       const msg =
         err?.response?.data?.message ??
-        'Invalid username or password. Please try again.';
+        (validationErrors
+          ? Object.values(validationErrors).flat().join(' ')
+          : 'Invalid username or password. Please try again.');
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -152,23 +168,6 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
         </div>
       </div>
 
-      {isRegister && (
-        <div className="form-group">
-          <label className="form-label" htmlFor="confirmPassword">
-            Confirm Password
-          </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            className="form-control"
-            placeholder="Repeat password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required={isRegister}
-          />
-        </div>
-      )}
-
       {/* Password */}
       <div className="form-group">
         <label className="form-label" htmlFor="password">
@@ -183,7 +182,7 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
+            autoComplete={isRegister ? 'new-password' : 'current-password'}
             minLength={6}
             maxLength={12}
             required
@@ -200,6 +199,26 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
           </button>
         </div>
       </div>
+
+      {isRegister && (
+        <div className="form-group">
+          <label className="form-label" htmlFor="confirmPassword">
+            Confirm Password
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            className="form-control"
+            placeholder="Repeat password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            minLength={6}
+            maxLength={12}
+            required={isRegister}
+          />
+        </div>
+      )}
 
       {/* Error message */}
       {error && (

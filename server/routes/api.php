@@ -2,13 +2,28 @@
 
 use App\Http\Controllers\api\AuthController;
 use App\Http\Controllers\api\UserController;
+use App\Http\Controllers\api\CategoryController;
+use App\Http\Controllers\api\ProductController;
+use App\Http\Controllers\api\OrderController;
+use App\Http\Controllers\api\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 // Public auth routes
 Route::controller(AuthController::class)->prefix('/auth')->group(function () {
     Route::post('/login', 'login');
+    Route::post('/register', 'register');
     Route::post('/logout', 'logout')->middleware('auth:sanctum');
     Route::get('/me', 'me')->middleware('auth:sanctum');
+});
+
+// Public product routes
+Route::controller(CategoryController::class)->prefix('/categories')->group(function () {
+    Route::get('/', 'index');
+});
+
+Route::controller(ProductController::class)->prefix('/products')->group(function () {
+    Route::get('/', 'index');
+    Route::get('/{product}', 'show');
 });
 
 // Protected user routes
@@ -19,5 +34,32 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/updateUser/{user}', 'updateUser');
         Route::put('/destroyUser/{user}', 'destroyUser');
     });
+
+    // Protected product routes (admin only)
+    Route::controller(ProductController::class)->prefix('/products')->group(function () {
+        Route::post('/', 'store');
+        Route::post('/{product}', 'update');
+        Route::delete('/{product}', 'destroy');
+    });
+
+    // Order routes
+    Route::controller(OrderController::class)->prefix('/orders')->group(function () {
+        Route::get('/', 'index');
+        Route::get('/{order}', 'show');
+        Route::post('/', 'store');
+        Route::patch('/{order}/accept', 'accept');
+        Route::patch('/{order}/decline', 'decline');
+        Route::patch('/{order}/mark-preparing', 'markPreparing');
+        Route::patch('/{order}/mark-ready', 'markReady');
+        Route::patch('/{order}/complete', 'complete');
+    });
+
+    // Notification routes
+    Route::controller(NotificationController::class)->prefix('/notifications')->group(function () {
+        Route::get('/', 'index');
+        Route::patch('/{notification}/read', 'markRead');
+        Route::patch('/mark-all-read', 'markAllRead');
+    });
 });
+
 

@@ -41,6 +41,45 @@ class AuthController extends Controller
     }
 
     /**
+     * Register endpoint.
+     */
+    public function register(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'min:6', 'max:12', 'unique:users'],
+            'password' => ['required', 'string', 'min:6', 'max:12', 'confirmed'],
+            'birth_date' => ['nullable', 'date'],
+        ]);
+
+        try {
+            $user = \App\Models\User::create([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'username' => $validated['username'],
+                'password' => $validated['password'],
+                'birth_date' => $validated['birth_date'] ?? null,
+                'role' => 'customer',
+            ]);
+
+            $token = $user->createToken('auth-token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User registered successfully',
+                'token' => $token,
+                'user' => new UserResource($user),
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed: ' . $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
      * Logout endpoint.
      */
     public function logout(Request $request): JsonResponse
