@@ -62,19 +62,27 @@ class OrderController extends Controller
         $user = Auth::user();
         $data = $request->validated();
 
+        $deliveryFee = ($data['fulfillment_type'] ?? 'pickup') === 'delivery'
+            ? (float) ($data['delivery_fee'] ?? 50)
+            : 0;
+
         // Create order
         $order = Order::create([
             'user_id' => $user->id,
+            'customer_name' => $data['customer_name'],
+            'customer_phone' => $data['customer_phone'],
+            'fulfillment_type' => $data['fulfillment_type'],
+            'delivery_address' => $data['delivery_address'] ?? null,
             'order_number' => 'ORD-' . strtoupper(Str::random(8)),
             'status' => 'pending',
             'notes' => $data['notes'] ?? null,
             'delivery_date' => $data['delivery_date'] ?? null,
-            // Force payment method to Cash on Delivery regardless of client input
+            'delivery_fee' => $deliveryFee,
             'payment_method' => 'Cash on Delivery',
         ]);
 
         // Create order items from cart
-        $totalAmount = 0;
+        $itemsTotal = 0;
         foreach ($data['items'] as $item) {
             $product = \App\Models\Product::find($item['product_id']);
 
@@ -89,28 +97,38 @@ class OrderController extends Controller
                 'quantity' => $item['quantity'],
             ]);
 
-            $totalAmount += $unitPrice * $item['quantity'];
+            $itemsTotal += $unitPrice * $item['quantity'];
 
-            // Create customization if provided
-            if (isset($item['customization']) && !empty($item['customization'])) {
-                $orderItem->customization()->create($item['customization']);
+            $customization = isset($item['customization'])
+                ? array_filter($item['customization'], fn ($v) => $v !== null && $v !== '')
+                : [];
+
+            if ($customization !== []) {
+                $orderItem->customization()->create($customization);
             }
         }
 
-        // Update order total
-        $order->total_amount = $totalAmount;
+        $order->total_amount = $itemsTotal + $deliveryFee;
         $order->save();
 
-        // Create admin notification
-        $adminUsers = \App\Models\User::where('role', 'admin')->get();
+        // Notify admins
+        $adminUsers = User::where('role', 'admin')->get();
         foreach ($adminUsers as $admin) {
             Notification::create([
                 'user_id' => $admin->id,
                 'order_id' => $order->id,
                 'title' => 'New Order',
-                'message' => "New order {$order->order_number} from {$user->first_name} {$user->last_name}",
+                'message' => "New order {$order->order_number} from {$data['customer_name']}",
             ]);
         }
+
+        // Notify customer
+        Notification::create([
+            'user_id' => $user->id,
+            'order_id' => $order->id,
+            'title' => 'Order Received',
+            'message' => "Your order {$order->order_number} was submitted and is pending approval.",
+        ]);
 
         $order->load('user', 'orderItems.customization');
 

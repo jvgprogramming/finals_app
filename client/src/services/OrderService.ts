@@ -24,9 +24,15 @@ export interface Order {
   id: number;
   order_number: string;
   total_amount: number;
+  delivery_fee?: number;
   status: OrderStatus;
   notes: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
+  fulfillment_type?: 'pickup' | 'delivery';
+  delivery_address?: string | null;
   delivery_date: string | null;
+  payment_method?: string;
   items: OrderItem[];
   user: {
     id: number;
@@ -40,7 +46,12 @@ export interface Order {
 export interface CreateOrderRequest {
   items: OrderItem[];
   notes?: string;
-  delivery_date?: string;
+  delivery_date?: string | null;
+  customer_name: string;
+  customer_phone: string;
+  fulfillment_type: 'pickup' | 'delivery';
+  delivery_address?: string | null;
+  delivery_fee?: number;
 }
 
 class OrderService {

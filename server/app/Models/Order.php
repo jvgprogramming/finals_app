@@ -13,8 +13,13 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
+        'customer_name',
+        'customer_phone',
+        'fulfillment_type',
+        'delivery_address',
         'order_number',
         'total_amount',
+        'delivery_fee',
         'status',
         'notes',
         'delivery_date',
@@ -23,6 +28,7 @@ class Order extends Model
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'delivery_fee' => 'decimal:2',
         'delivery_date' => 'datetime',
     ];
 

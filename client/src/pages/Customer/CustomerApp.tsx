@@ -8,9 +8,18 @@ import OrderService from '../../services/OrderService';
 import NotificationService from '../../services/NotificationService';
 import useNotificationPolling from '../../hooks/useNotificationPolling';
 import { mapProductsFromApi } from '../../utils/mapProduct';
-import { mapOrdersFromApi, mapOrderFromApi } from '../../utils/mapOrder';
+import {
+  mapOrdersFromApi,
+  mapOrderFromApi,
+  formatSubmittedAt,
+} from '../../utils/mapOrder';
+import ConfirmModal from '../../components/ConfirmModal';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import EmptyState from '../../components/EmptyState';
+import NotificationPanel from '../../components/admin/NotificationPanel';
 import { playSuccessSound } from '../../utils/sound';
 import { formatPeso } from '../../utils/currency';
+import { formatDeliveryDateForApi } from '../../utils/checkoutDate';
 import {
   getPriceForSize,
   CAKE_SIZE_OPTIONS,
@@ -69,10 +78,22 @@ export default function CustomerApp() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState('popular'); // 'popular', 'price-asc', 'price-desc'
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const [isNotifPanelOpen, setIsNotifPanelOpen] = useState(false);
+  const knownOrderIdsRef = useRef(new Set());
+  const pollingReadyRef = useRef(false);
+
   const handleLogout = async () => {
     await logout();
-    // stay on landing page after logout
     setIsLoginOpen(false);
+  };
+
+  const confirmLogout = async () => {
+    setShowLogoutConfirm(false);
+    await handleLogout();
   };
 
   // Save cart to LocalStorage only (keep cart temporary in browser)
@@ -114,27 +135,38 @@ export default function CustomerApp() {
   // Fetch products on mount
   useEffect(() => {
     const fetchProducts = async () => {
+      setIsLoadingProducts(true);
       try {
         const productsData = await ProductService.getProducts();
         setProducts(mapProductsFromApi(productsData));
+        setFetchError(null);
       } catch (err) {
         console.error('Error fetching products:', err);
+        setFetchError('Failed to load menu. Please refresh the page.');
+      } finally {
+        setIsLoadingProducts(false);
       }
     };
 
     fetchProducts();
   }, []);
 
-  // Fetch orders on mount (only if authenticated)
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const fetchOrders = async () => {
+      setIsLoadingOrders(true);
       try {
         const ordersData = await OrderService.getOrders();
-        setOrders(mapOrdersFromApi(ordersData));
+        const mapped = mapOrdersFromApi(ordersData);
+        setOrders(mapped);
+        knownOrderIdsRef.current = new Set(mapped.map((o) => o.id));
+        setFetchError(null);
       } catch (err) {
         console.error('Error fetching orders:', err);
+        setFetchError('Failed to load your orders.');
+      } finally {
+        setIsLoadingOrders(false);
       }
     };
 
@@ -156,9 +188,6 @@ export default function CustomerApp() {
 
     fetchNotifications();
   }, [isAuthenticated]);
-
-  const knownOrderIdsRef = useRef(new Set());
-  const pollingReadyRef = useRef(false);
 
   useNotificationPolling({
     interval: 10000,
@@ -228,52 +257,59 @@ export default function CustomerApp() {
     setCart((prev) => prev.filter((item) => item.cartItemId !== cartItemId));
   };
 
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
   // Checkout submission - submit order to API
   const handlePlaceOrder = async (checkoutForm) => {
+    setIsPlacingOrder(true);
     try {
-      // Transform cart items to API format
-      const orderItems = cart.map((item) => ({
-        product_id: item.id,
-        quantity: item.quantity,
-        customization: {
-          dedication_message: item.dedication || null,
-          size: item.size || null,
-          flavor: item.flavor || null,
-          color_theme: null,
-          custom_notes: null,
-        },
-      }));
+      const orderItems = cart.map((item) => {
+        const customization: Record<string, string> = {};
+        if (item.dedication) customization.dedication_message = item.dedication;
+        if (item.size) customization.size = item.size;
+        if (item.flavor) customization.flavor = item.flavor;
+        return {
+          product_id: item.id,
+          quantity: item.quantity,
+          ...(Object.keys(customization).length > 0 ? { customization } : {}),
+        };
+      });
 
-      // Prepare order data for API
+      const deliveryFee = checkoutForm.type === 'delivery' ? 50 : 0;
+
       const orderData = {
         items: orderItems,
-        notes: checkoutForm.paymentMethod ? `Payment: ${checkoutForm.paymentMethod}` : '',
-        delivery_date: checkoutForm.date ? new Date(`${checkoutForm.date}T${checkoutForm.time}`).toISOString() : null,
+        notes: checkoutForm.paymentMethod
+          ? `Payment: ${checkoutForm.paymentMethod}`
+          : '',
+        delivery_date: checkoutForm.date
+          ? formatDeliveryDateForApi(checkoutForm.date, checkoutForm.time)
+          : null,
+        customer_name: checkoutForm.name.trim(),
+        customer_phone: checkoutForm.phone.trim(),
+        fulfillment_type: checkoutForm.type,
+        delivery_address:
+          checkoutForm.type === 'delivery' ? checkoutForm.address.trim() : null,
+        delivery_fee: deliveryFee,
       };
 
-      // Create order via API
       const createdOrder = await OrderService.createOrder(orderData);
+      const mapped = mapOrderFromApi(createdOrder);
 
-      // Update state with returned order
-      setOrders((prev) => [mapOrderFromApi(createdOrder), ...prev]);
-      setCart([]); // Clear cart
+      setOrders((prev) => [mapped, ...prev]);
+      knownOrderIdsRef.current.add(mapped.id);
+      setCart([]);
       setIsCheckoutOpen(false);
       setIsCartOpen(false);
       playSuccessSound();
 
-      // Optional: Create a notification (normally done by backend)
-      const notification = {
-        id: `notif-${Date.now()}`,
-        title: `Order ${createdOrder.order_number} Received`,
-        message: `Your order has been submitted and is pending bakery approval.`,
-        is_read: false,
-      };
-      setNotifications((prev) => [notification, ...prev]);
-
+      const notifResult = await NotificationService.getNotifications();
+      setNotifications(notifResult.data);
     } catch (err) {
       console.error('Error placing order:', err);
-      // Show error feedback
       alert('Failed to place order. Please try again.');
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
@@ -306,12 +342,19 @@ export default function CustomerApp() {
   };
 
   // Clear unread notifications
-  const handleMarkNotificationsRead = (type) => {
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.type === type ? { ...notif, read: true } : notif,
-      ),
-    );
+  const handleMarkNotificationsRead = async () => {
+    try {
+      await NotificationService.markAllNotificationsRead();
+      const result = await NotificationService.getNotifications();
+      setNotifications(result.data);
+    } catch (err) {
+      console.error('Error marking notifications read:', err);
+    }
+  };
+
+  const handleNotificationOrderSelect = (orderId) => {
+    setActiveView('customer-orders');
+    setIsNotifPanelOpen(false);
   };
 
   // ==========================================================================
@@ -352,12 +395,10 @@ export default function CustomerApp() {
       });
   }, [products, searchQuery, activeCategory, sortBy]);
 
-  const notifCounts = useMemo(() => {
-    const customer = notifications.filter(
-      (n) => n.type === 'customer' && !n.read,
-    ).length;
-    return { customer };
-  }, [notifications]);
+  const unreadNotifCount = useMemo(
+    () => notifications.filter((n) => !n.is_read).length,
+    [notifications],
+  );
 
   return (
     <div className="app-container">
@@ -419,10 +460,7 @@ export default function CustomerApp() {
                 </button>
                 <button
                   className={`nav-link ${activeView === 'customer-orders' ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveView('customer-orders');
-                    handleMarkNotificationsRead('customer');
-                  }}
+                  onClick={() => setActiveView('customer-orders')}
                   style={{
                     border: 'none',
                     background: 'none',
@@ -431,15 +469,26 @@ export default function CustomerApp() {
                   }}
                 >
                   My Orders
-                  {notifCounts.customer > 0 && (
+                  {unreadNotifCount > 0 && (
                     <span
                       className="badge"
                       style={{ top: '-2px', right: '-12px' }}
                     >
-                      {notifCounts.customer}
+                      {unreadNotifCount}
                     </span>
                   )}
                 </button>
+
+                {isAuthenticated && (
+                  <NotificationPanel
+                    notifications={notifications}
+                    isOpen={isNotifPanelOpen}
+                    shaking={shakingBell}
+                    onToggle={() => setIsNotifPanelOpen((v) => !v)}
+                    onMarkAllRead={handleMarkNotificationsRead}
+                    onSelectOrder={handleNotificationOrderSelect}
+                  />
+                )}
 
                 {/* Cart Action */}
                 <button
@@ -468,7 +517,7 @@ export default function CustomerApp() {
                 ) : (
                   <button
                     className="nav-link"
-                    onClick={handleLogout}
+                    onClick={() => setShowLogoutConfirm(true)}
                     style={{
                       border: '1px solid var(--almond)',
                       background: 'var(--velvet-cream)',
@@ -556,18 +605,28 @@ export default function CustomerApp() {
                       </span>
                     </div>
 
-                    {filteredProducts.length === 0 ? (
+                    {fetchError && (
                       <div
                         style={{
-                          textAlign: 'center',
-                          padding: '60px 0',
-                          color: 'var(--cocoa)',
+                          padding: '12px 16px',
+                          marginBottom: '16px',
+                          background: 'rgba(212, 80, 80, 0.1)',
+                          border: '1px solid var(--danger)',
+                          borderRadius: '8px',
+                          color: 'var(--danger)',
+                          fontSize: '14px',
                         }}
                       >
-                        <p style={{ fontSize: '18px' }}>
-                          No delicacies found matching your selection.
-                        </p>
+                        {fetchError}
                       </div>
+                    )}
+                    {isLoadingProducts ? (
+                      <LoadingSpinner label="Loading menu…" />
+                    ) : filteredProducts.length === 0 ? (
+                      <EmptyState
+                        title="No delicacies found"
+                        description="Try a different category or search term."
+                      />
                     ) : (
                       <div className="product-grid">
                         {filteredProducts.map((product) => (
@@ -631,7 +690,9 @@ export default function CustomerApp() {
                     My Orders & Delivery Tracker
                   </h3>
 
-                  {orders.length === 0 ? (
+                  {isLoadingOrders ? (
+                    <LoadingSpinner label="Loading your orders…" />
+                  ) : orders.length === 0 ? (
                     <div
                       style={{
                         textAlign: 'center',
@@ -661,7 +722,6 @@ export default function CustomerApp() {
                     </div>
                   ) : (
                     orders.map((order) => {
-                      // Calculate step indicator index for timeline
                       const statusSteps = [
                         'pending',
                         'accepted',
@@ -669,30 +729,39 @@ export default function CustomerApp() {
                         'ready',
                         'completed',
                       ];
-                      const activeIndex = statusSteps.indexOf(order.status?.toLowerCase());
+                      const activeIndex = statusSteps.indexOf(
+                        order.statusKey ?? 'pending',
+                      );
+                      const isReady = order.statusKey === 'ready';
+                      const statusLabel =
+                        isReady && order.type === 'delivery'
+                          ? 'Out for Delivery'
+                          : isReady
+                            ? 'Ready for Pickup'
+                            : order.status;
 
                       return (
                         <div key={order.id} className="order-history-card">
                           <div className="order-history-header">
                             <div className="order-id-date">
                               <h4>Order Reference: {order.order_number}</h4>
-                              <span>Submitted: {new Date(order.created_at).toLocaleDateString()}</span>
+                              <span>Submitted: {formatSubmittedAt(order)}</span>
+                              {order.delivery_date && (
+                                <span style={{ display: 'block', fontSize: '12px', marginTop: '4px' }}>
+                                  Scheduled: {order.date} at {order.time}
+                                </span>
+                              )}
                             </div>
                             <div>
                               <span
-                                className={`status-badge ${order.status?.toLowerCase()}`}
+                                className={`status-badge ${order.statusKey}`}
                               >
-                                {order.status === 'ready' && order.delivery_date
-                                  ? 'Out for Delivery'
-                                  : order.status === 'ready'
-                                  ? 'Ready for Pickup'
-                                  : order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
+                                {statusLabel}
                               </span>
                             </div>
                           </div>
 
-                          {/* Graphical Timeline Progress Bar (only if not declined!) */}
-                          {order.status !== 'declined' && (
+                          {order.statusKey !== 'declined' && (
                             <div className="progress-bar-wrapper">
                               <div className="progress-line-bg"></div>
                               <div
@@ -703,12 +772,14 @@ export default function CustomerApp() {
                               ></div>
                               <div className="progress-steps">
                                 {statusSteps.map((step, idx) => {
-                                  let label = step;
-                                  if (step === 'Ready')
+                                  let label =
+                                    step.charAt(0).toUpperCase() + step.slice(1);
+                                  if (step === 'ready') {
                                     label =
                                       order.type === 'delivery'
                                         ? 'Out for Delivery'
                                         : 'Ready for Pickup';
+                                  }
 
                                   let stepClass = '';
                                   if (idx < activeIndex)
@@ -734,7 +805,7 @@ export default function CustomerApp() {
                             </div>
                           )}
 
-                          {order.status === 'Declined' && (
+                          {order.statusKey === 'declined' && (
                             <div className="order-remarks-alert">
                               <ExclamationTriangleIcon style={{ width: 18, height: 18 }} aria-hidden /> <strong>Bakery Notification:</strong> This
                               order was declined. <br />
@@ -765,9 +836,9 @@ export default function CustomerApp() {
                                 Order Details
                               </h5>
                               <ul style={{ listStyle: 'none' }}>
-                                {order.items.map((item) => (
+                                {order.items.map((item, idx) => (
                                   <li
-                                    key={item.cartItemId}
+                                    key={item.id ?? idx}
                                     style={{
                                       marginBottom: '8px',
                                       fontSize: '14px',
@@ -897,6 +968,7 @@ export default function CustomerApp() {
       {isCheckoutOpen && (
         <CheckoutModal
           cart={cart}
+          isSubmitting={isPlacingOrder}
           onClose={() => setIsCheckoutOpen(false)}
           onSubmit={handlePlaceOrder}
         />
@@ -925,6 +997,16 @@ export default function CustomerApp() {
             </div>
           </div>
         )}
+
+      {showLogoutConfirm && (
+        <ConfirmModal
+          title="Log out?"
+          message="You will need to sign in again to place orders and track deliveries."
+          confirmLabel="Log out"
+          onConfirm={confirmLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1259,7 +1341,7 @@ function CartDrawer({
 // ==========================================================================
 // Helper Sub-Component 3: Checkout Modal with Receipt Upload Preview
 // ==========================================================================
-function CheckoutModal({ cart, onClose, onSubmit }) {
+function CheckoutModal({ cart, onClose, onSubmit, isSubmitting = false }) {
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -1568,14 +1650,16 @@ function CheckoutModal({ cart, onClose, onSubmit }) {
                   <button
                     type="submit"
                     className="btn-primary"
+                    disabled={isSubmitting}
                     style={{
                       width: '100%',
                       height: '46px',
                       marginTop: '24px',
                       borderRadius: '23px',
+                      opacity: isSubmitting ? 0.7 : 1,
                     }}
                   >
-                    Submit Bakery Order
+                    {isSubmitting ? 'Submitting…' : 'Submit Bakery Order'}
                   </button>
                 </div>
               </div>

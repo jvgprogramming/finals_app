@@ -9,6 +9,11 @@ import useNotificationPolling from '../../hooks/useNotificationPolling';
 import { mapProductsFromApi } from '../../utils/mapProduct';
 import { mapOrdersFromApi, mapOrderFromApi, orderMatchesFilter } from '../../utils/mapOrder';
 import AdminDetailModal from '../../components/admin/AdminDetailModal';
+import NotificationPanel from '../../components/admin/NotificationPanel';
+import SalesTrendChart from '../../components/admin/SalesTrendChart';
+import ConfirmModal from '../../components/ConfirmModal';
+import LoadingSpinner from '../../components/LoadingSpinner';
+import EmptyState from '../../components/EmptyState';
 import { playSuccessSound } from '../../utils/sound';
 import { formatPeso } from '../../utils/currency';
 import { resolveProductImageUrl } from '../../utils/imageUrl';
@@ -87,9 +92,21 @@ export default function AdminApp() {
     image: null,
   });
 
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+  const [isNotifPanelOpen, setIsNotifPanelOpen] = useState(false);
+  const [pollStatus, setPollStatus] = useState('connected');
+
   const handleLogout = async () => {
     await logout();
     navigate('/', { replace: true });
+  };
+
+  const confirmLogout = async () => {
+    setShowLogoutConfirm(false);
+    await handleLogout();
   };
 
   // Save cart to LocalStorage only (keep cart temporary in browser)
@@ -131,6 +148,7 @@ export default function AdminApp() {
   // Fetch products on mount
   useEffect(() => {
     const fetchProducts = async () => {
+      setIsLoadingProducts(true);
       try {
         const [productsData, categoriesData] = await Promise.all([
           ProductService.getProducts(),
@@ -138,8 +156,12 @@ export default function AdminApp() {
         ]);
         setProducts(mapProductsFromApi(productsData));
         setCategories(categoriesData);
+        setFetchError(null);
       } catch (err) {
         console.error('Error fetching products:', err);
+        setFetchError('Failed to load products.');
+      } finally {
+        setIsLoadingProducts(false);
       }
     };
 
@@ -151,11 +173,16 @@ export default function AdminApp() {
     if (!isAuthenticated) return;
 
     const fetchOrders = async () => {
+      setIsLoadingOrders(true);
       try {
         const ordersData = await OrderService.getOrders();
         setOrders(mapOrdersFromApi(ordersData));
+        setFetchError(null);
       } catch (err) {
         console.error('Error fetching orders:', err);
+        setFetchError('Failed to load orders.');
+      } finally {
+        setIsLoadingOrders(false);
       }
     };
 
@@ -193,6 +220,7 @@ export default function AdminApp() {
       const hasNewOrder = mapped.some((o) => !knownOrderIdsRef.current.has(o.id));
       knownOrderIdsRef.current = new Set(mapped.map((o) => o.id));
       setOrders(mapped);
+      setPollStatus('connected');
       if (pollingReadyRef.current && hasNewOrder) {
         setShakingBell(true);
         setTimeout(() => setShakingBell(false), 1000);
@@ -202,6 +230,7 @@ export default function AdminApp() {
     },
     onError: (error) => {
       console.error('Polling error:', error);
+      setPollStatus('reconnecting');
     },
   });
 
@@ -588,12 +617,24 @@ export default function AdminApp() {
   };
 
   // Clear unread notifications
-  const handleMarkNotificationsRead = (type) => {
-    setNotifications((prev) =>
-      prev.map((notif) =>
-        notif.type === type ? { ...notif, read: true } : notif,
-      ),
-    );
+  const handleMarkNotificationsRead = async () => {
+    try {
+      await NotificationService.markAllNotificationsRead();
+      const result = await NotificationService.getNotifications();
+      setNotifications(result.data);
+    } catch (err) {
+      console.error('Error marking notifications read:', err);
+    }
+  };
+
+  const handleNotificationOrderSelect = (orderId) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (order) {
+      setAdminDetailOrder(order);
+      setActiveView('admin-orders');
+      setAdminOrderFilter('All');
+    }
+    setIsNotifPanelOpen(false);
   };
 
   // ==========================================================================
@@ -652,15 +693,10 @@ export default function AdminApp() {
   }, [orders]);
 
   // Custom Notifications Counts
-  const notifCounts = useMemo(() => {
-    const customer = notifications.filter(
-      (n) => n.type === 'customer' && !n.read,
-    ).length;
-    const admin = notifications.filter(
-      (n) => n.type === 'admin' && !n.read,
-    ).length;
-    return { customer, admin };
-  }, [notifications]);
+  const unreadNotifCount = useMemo(
+    () => notifications.filter((n) => !n.is_read).length,
+    [notifications],
+  );
 
   return (
     <div className="app-container">
@@ -748,10 +784,7 @@ export default function AdminApp() {
                 </button>
                 <button
                   className={`nav-link ${activeView === 'admin-orders' ? 'active' : ''}`}
-                  onClick={() => {
-                    setActiveView('admin-orders');
-                    handleMarkNotificationsRead('admin');
-                  }}
+                  onClick={() => setActiveView('admin-orders')}
                   style={{
                     border: 'none',
                     background: 'none',
@@ -760,7 +793,7 @@ export default function AdminApp() {
                   }}
                 >
                   Order Queue
-                  {notifCounts.admin > 0 && (
+                  {stats.pending > 0 && (
                     <span
                       className="badge"
                       style={{
@@ -770,7 +803,7 @@ export default function AdminApp() {
                         right: '-12px',
                       }}
                     >
-                      {notifCounts.admin}
+                      {stats.pending}
                     </span>
                   )}
                 </button>
@@ -785,9 +818,18 @@ export default function AdminApp() {
                 >
                   Stock Editor
                 </button>
+                <NotificationPanel
+                  notifications={notifications}
+                  isOpen={isNotifPanelOpen}
+                  shaking={shakingBell}
+                  onToggle={() => setIsNotifPanelOpen((v) => !v)}
+                  onMarkAllRead={handleMarkNotificationsRead}
+                  onSelectOrder={handleNotificationOrderSelect}
+                />
                 <button
+                  type="button"
                   className="nav-link"
-                  onClick={handleLogout}
+                  onClick={() => setShowLogoutConfirm(true)}
                   style={{
                     border: '1px solid var(--almond)',
                     background: 'var(--velvet-cream)',
@@ -814,9 +856,26 @@ export default function AdminApp() {
                         color: 'var(--cocoa)',
                       }}
                     >
-                      Live Status: Connected
+                      Live Status:{' '}
+                      {pollStatus === 'connected' ? 'Connected' : 'Reconnecting…'}
                     </span>
                   </div>
+
+                  {fetchError && (
+                    <div
+                      style={{
+                        padding: '12px 16px',
+                        marginBottom: '16px',
+                        background: 'rgba(212, 80, 80, 0.1)',
+                        border: '1px solid var(--danger)',
+                        borderRadius: '8px',
+                        color: 'var(--danger)',
+                        fontSize: '14px',
+                      }}
+                    >
+                      {fetchError}
+                    </div>
+                  )}
 
                   {/* Operational Metrics grid */}
                   <div className="stat-grid">
@@ -853,7 +912,7 @@ export default function AdminApp() {
                         className="stat-val"
                         style={{ color: 'var(--espresso)' }}
                       >
-                        ₱{stats.revenue.toLocaleString()}
+                        {formatPeso(stats.revenue)}
                       </span>
                     </div>
                   </div>
@@ -885,214 +944,7 @@ export default function AdminApp() {
                       >
                         Sales Analytics Trends
                       </h4>
-                      <div
-                        style={{
-                          height: '220px',
-                          width: '100%',
-                          position: 'relative',
-                        }}
-                      >
-                        {/* Custom beautiful responsive SVG graphic curve representing sales! */}
-                        <svg
-                          viewBox="0 0 500 200"
-                          style={{ width: '100%', height: '100%' }}
-                        >
-                          <defs>
-                            <linearGradient
-                              id="chartGrad"
-                              x1="0"
-                              y1="0"
-                              x2="0"
-                              y2="1"
-                            >
-                              <stop
-                                offset="0%"
-                                stopColor="var(--primary)"
-                                stopOpacity="0.2"
-                              />
-                              <stop
-                                offset="100%"
-                                stopColor="var(--primary)"
-                                stopOpacity="0.0"
-                              />
-                            </linearGradient>
-                          </defs>
-                          {/* Grid lines */}
-                          <line
-                            x1="50"
-                            y1="20"
-                            x2="480"
-                            y2="20"
-                            stroke="#f0e6dd"
-                            strokeWidth="1"
-                            strokeDasharray="4"
-                          />
-                          <line
-                            x1="50"
-                            y1="70"
-                            x2="480"
-                            y2="70"
-                            stroke="#f0e6dd"
-                            strokeWidth="1"
-                            strokeDasharray="4"
-                          />
-                          <line
-                            x1="50"
-                            y1="120"
-                            x2="480"
-                            y2="120"
-                            stroke="#f0e6dd"
-                            strokeWidth="1"
-                            strokeDasharray="4"
-                          />
-                          <line
-                            x1="50"
-                            y1="170"
-                            x2="480"
-                            y2="170"
-                            stroke="#f0e6dd"
-                            strokeWidth="1"
-                          />
-
-                          {/* Data points path */}
-                          <path
-                            d="M 50 160 Q 120 130 190 90 T 330 60 T 480 30 L 480 170 L 50 170 Z"
-                            fill="url(#chartGrad)"
-                          />
-                          <path
-                            d="M 50 160 Q 120 130 190 90 T 330 60 T 480 30"
-                            fill="none"
-                            stroke="var(--primary)"
-                            strokeWidth="3.5"
-                            strokeLinecap="round"
-                          />
-                          {/* Dot markers */}
-                          <circle
-                            cx="50"
-                            cy="160"
-                            r="5"
-                            fill="var(--espresso)"
-                            stroke="var(--primary)"
-                            strokeWidth="2"
-                          />
-                          <circle
-                            cx="120"
-                            cy="130"
-                            r="5"
-                            fill="var(--espresso)"
-                            stroke="var(--primary)"
-                            strokeWidth="2"
-                          />
-                          <circle
-                            cx="190"
-                            cy="90"
-                            r="5"
-                            fill="var(--espresso)"
-                            stroke="var(--primary)"
-                            strokeWidth="2"
-                          />
-                          <circle
-                            cx="330"
-                            cy="60"
-                            r="5"
-                            fill="var(--espresso)"
-                            stroke="var(--primary)"
-                            strokeWidth="2"
-                          />
-                          <circle
-                            cx="480"
-                            cy="30"
-                            r="5"
-                            fill="var(--espresso)"
-                            stroke="var(--primary)"
-                            strokeWidth="2"
-                          />
-
-                          {/* Labels */}
-                          <text
-                            x="50"
-                            y="190"
-                            fill="var(--cocoa)"
-                            fontSize="10"
-                            textAnchor="middle"
-                          >
-                            Mon
-                          </text>
-                          <text
-                            x="120"
-                            y="190"
-                            fill="var(--cocoa)"
-                            fontSize="10"
-                            textAnchor="middle"
-                          >
-                            Tue
-                          </text>
-                          <text
-                            x="190"
-                            y="190"
-                            fill="var(--cocoa)"
-                            fontSize="10"
-                            textAnchor="middle"
-                          >
-                            Wed
-                          </text>
-                          <text
-                            x="330"
-                            y="190"
-                            fill="var(--cocoa)"
-                            fontSize="10"
-                            textAnchor="middle"
-                          >
-                            Thu
-                          </text>
-                          <text
-                            x="480"
-                            y="190"
-                            fill="var(--cocoa)"
-                            fontSize="10"
-                            textAnchor="middle"
-                          >
-                            Fri
-                          </text>
-
-                          <text
-                            x="40"
-                            y="24"
-                            fill="var(--cocoa)"
-                            fontSize="10"
-                            textAnchor="end"
-                          >
-                            ₱10k
-                          </text>
-                          <text
-                            x="40"
-                            y="74"
-                            fill="var(--cocoa)"
-                            fontSize="10"
-                            textAnchor="end"
-                          >
-                            ₱5k
-                          </text>
-                          <text
-                            x="40"
-                            y="124"
-                            fill="var(--cocoa)"
-                            fontSize="10"
-                            textAnchor="end"
-                          >
-                            ₱2k
-                          </text>
-                          <text
-                            x="40"
-                            y="174"
-                            fill="var(--cocoa)"
-                            fontSize="10"
-                            textAnchor="end"
-                          >
-                            0
-                          </text>
-                        </svg>
-                      </div>
+                      <SalesTrendChart orders={orders} />
                     </div>
 
                     <div
@@ -1258,7 +1110,9 @@ export default function AdminApp() {
                     </div>
 
                     <div className="board-list">
-                      {filteredAdminOrders.length === 0 ? (
+                      {isLoadingOrders ? (
+                        <LoadingSpinner label="Loading orders…" />
+                      ) : filteredAdminOrders.length === 0 ? (
                         <div
                           style={{
                             textAlign: 'center',
@@ -1410,7 +1264,24 @@ export default function AdminApp() {
                       </h4>
 
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        {products.map((product) => (
+                        {isLoadingProducts ? (
+                          <LoadingSpinner label="Loading products…" />
+                        ) : products.length === 0 ? (
+                          <EmptyState
+                            title="No products yet"
+                            description="Add your first bakery item to the catalog."
+                            action={
+                              <button
+                                type="button"
+                                className="btn-primary"
+                                onClick={openNewProductEditor}
+                              >
+                                Add New Cake
+                              </button>
+                            }
+                          />
+                        ) : (
+                        products.map((product) => (
                           <div key={product.id} className="inventory-item-row">
                             <div className="inventory-item-meta">
                               <img
@@ -1485,7 +1356,8 @@ export default function AdminApp() {
                               </div>
                             </div>
                           </div>
-                        ))}
+                        ))
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1729,6 +1601,15 @@ export default function AdminApp() {
         />
       )}
 
+      {showLogoutConfirm && (
+        <ConfirmModal
+          title="Log out?"
+          message="You will need to sign in again to access the admin dashboard."
+          confirmLabel="Log out"
+          onConfirm={confirmLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
+      )}
     </div>
   );
 }

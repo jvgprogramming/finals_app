@@ -7,6 +7,7 @@ export interface UiOrder {
   customerName: string;
   customerPhone?: string;
   totalPrice: number;
+  deliveryFee?: number;
   status: string;
   statusKey: string;
   items: Array<{
@@ -20,11 +21,13 @@ export interface UiOrder {
   }>;
   date: string;
   time: string;
+  created_at?: string;
   type?: string;
   address?: string;
   paymentMethod?: string;
   notes?: string | null;
   delivery_date?: string | null;
+  remarks?: string | null;
   user?: Order['user'];
   raw?: Order;
 }
@@ -34,6 +37,9 @@ function formatDateParts(iso: string | undefined): { date: string; time: string 
     return { date: '—', time: '—' };
   }
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) {
+    return { date: '—', time: '—' };
+  }
   return {
     date: d.toLocaleDateString(),
     time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -46,12 +52,13 @@ function capitalizeStatus(status: string): string {
 }
 
 export function mapOrderFromApi(order: Order & Record<string, unknown>): UiOrder {
-  const { date, time } = formatDateParts(
-    (order.created_at as string) ?? (order.date as string),
-  );
+  const scheduleSource =
+    (order.delivery_date as string) ?? (order.created_at as string);
+  const { date, time } = formatDateParts(scheduleSource);
 
   const user = order.user as Order['user'] | undefined;
   const customerName =
+    (order.customer_name as string) ??
     (order.customerName as string) ??
     (user
       ? `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim()
@@ -80,26 +87,36 @@ export function mapOrderFromApi(order: Order & Record<string, unknown>): UiOrder
   });
 
   const statusRaw = String(order.status ?? 'pending').toLowerCase();
+  const fulfillmentType =
+    (order.fulfillment_type as string) ?? (order.type as string) ?? 'pickup';
 
   return {
     id: order.id,
     order_number: order.order_number,
     customerName,
-    customerPhone: (order.customerPhone as string) ?? '—',
+    customerPhone:
+      (order.customer_phone as string) ??
+      (order.customerPhone as string) ??
+      '—',
     totalPrice: Number(order.totalPrice ?? order.total_amount ?? 0),
+    deliveryFee: Number(order.delivery_fee ?? 0),
     status: capitalizeStatus(statusRaw),
     statusKey: statusRaw,
     items,
     date,
     time,
-    type: (order.type as string) ?? 'pickup',
-    address: (order.address as string) ?? '',
-    // API may return `payment_method` (snake_case) or `paymentMethod` (camelCase).
+    created_at: order.created_at as string | undefined,
+    type: fulfillmentType,
+    address:
+      (order.delivery_address as string) ??
+      (order.address as string) ??
+      '',
     paymentMethod:
       (order.payment_method as string) ?? (order.paymentMethod as string) ??
       'Cash on Delivery',
     notes: order.notes ?? null,
-    delivery_date: order.delivery_date ?? null,
+    delivery_date: (order.delivery_date as string) ?? null,
+    remarks: order.notes ?? null,
     user,
     raw: order,
   };
@@ -114,4 +131,12 @@ export function orderMatchesFilter(order: UiOrder, filter: string): boolean {
   if (filter === 'All') return true;
   const key = order.statusKey ?? order.status.toLowerCase();
   return key === filter.toLowerCase();
+}
+
+/** Submitted date label for order cards */
+export function formatSubmittedAt(order: UiOrder): string {
+  if (!order.created_at) return '—';
+  const d = new Date(order.created_at);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString();
 }

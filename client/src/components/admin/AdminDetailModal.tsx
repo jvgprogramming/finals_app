@@ -5,11 +5,11 @@ import {
   CalendarDaysIcon,
   ClockIcon,
   PhoneIcon,
-  HomeIcon,
   MapPinIcon,
-  CurrencyDollarIcon,
   ChartBarIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
+import { formatPeso } from '../../utils/currency';
 
 export default function AdminDetailModal({
   order,
@@ -21,11 +21,11 @@ export default function AdminDetailModal({
   const [remarks, setRemarks] = useState('');
   const [isDeclining, setIsDeclining] = useState(false);
 
-  const subtotal = order.items.reduce(
+  const itemsSubtotal = order.items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-  const deliveryFee = order.type === 'delivery' ? 50 : 0;
+  const deliveryFee = order.deliveryFee ?? (order.type === 'delivery' ? 50 : 0);
 
   const handleApprove = () => {
     onAccept(order.id, remarks);
@@ -45,8 +45,8 @@ export default function AdminDetailModal({
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: '800px' }}
       >
-        <button className="modal-close" onClick={onClose}>
-          ×
+        <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+          <XMarkIcon className="h-5 w-5" aria-hidden />
         </button>
 
         <div className="checkout-modal-inner">
@@ -86,6 +86,14 @@ export default function AdminDetailModal({
                 <MapPinIcon style={{ width: 14, height: 14 }} aria-hidden />{' '}
                 <strong>Fulfillment:</strong>{' '}
                 {order.type === 'delivery' ? 'Home Delivery' : 'Store Pickup'}
+                <br />
+                {order.type === 'delivery' && order.address && (
+                  <>
+                    <strong>Address:</strong> {order.address}
+                    <br />
+                  </>
+                )}
+                <strong>Payment:</strong> {order.paymentMethod}
               </p>
 
               <h4 className="checkout-section-title">Order Breakdown</h4>
@@ -163,7 +171,7 @@ export default function AdminDetailModal({
                 </form>
               )}
 
-              {order.status === 'Pending' && !isDeclining && (
+              {order.statusKey === 'pending' && !isDeclining && (
                 <div
                   style={{ display: 'flex', gap: '16px', marginTop: '32px' }}
                 >
@@ -189,9 +197,9 @@ export default function AdminDetailModal({
                 </div>
               )}
 
-              {order.status !== 'Pending' &&
-                order.status !== 'Declined' &&
-                order.status !== 'Completed' && (
+              {order.statusKey !== 'pending' &&
+                order.statusKey !== 'declined' &&
+                order.statusKey !== 'completed' && (
                   <div
                     style={{
                       marginTop: '24px',
@@ -210,7 +218,7 @@ export default function AdminDetailModal({
                         marginTop: '8px',
                       }}
                     >
-                      {order.status === 'Accepted' && (
+                      {order.statusKey === 'accepted' && (
                         <button
                           type="button"
                           className="btn-sm btn-accept"
@@ -222,7 +230,7 @@ export default function AdminDetailModal({
                           Begin Preparing / Baking
                         </button>
                       )}
-                      {order.status === 'Preparing' && (
+                      {order.statusKey === 'preparing' && (
                         <button
                           type="button"
                           className="btn-sm btn-review"
@@ -234,7 +242,7 @@ export default function AdminDetailModal({
                           Mark Ready for Dispatch
                         </button>
                       )}
-                      {order.status === 'Ready' && (
+                      {order.statusKey === 'ready' && (
                         <button
                           type="button"
                           className="btn-sm btn-accept"
@@ -264,6 +272,18 @@ export default function AdminDetailModal({
                 >
                   Payment Summary
                 </h4>
+                <div style={{ fontSize: '13px', lineHeight: 1.8, marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Items subtotal</span>
+                    <span>{formatPeso(itemsSubtotal)}</span>
+                  </div>
+                  {deliveryFee > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Delivery fee</span>
+                      <span>{formatPeso(deliveryFee)}</span>
+                    </div>
+                  )}
+                </div>
                 <div
                   style={{
                     display: 'flex',
@@ -273,7 +293,7 @@ export default function AdminDetailModal({
                   }}
                 >
                   <span>Total Due:</span>
-                  <span>₱{order.totalPrice.toLocaleString()}</span>
+                  <span>{formatPeso(order.totalPrice)}</span>
                 </div>
                 <p style={{ marginTop: '12px', fontSize: '13px' }}>
                   <ChartBarIcon style={{ width: 14, height: 14 }} aria-hidden />{' '}

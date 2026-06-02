@@ -2297,6 +2297,16 @@ input:checked + .slider:before {
   animation: shake 0.5s ease;
 }
 
+.shaking-bell {
+  animation: shake 0.5s ease;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ==========================================================================
    Responsive Grid Fixes & Adjustments
    ========================================================================== */
