@@ -21,6 +21,7 @@ class OrderResource extends JsonResource
             'status' => $this->status,
             'notes' => $this->notes,
             'delivery_date' => $this->delivery_date,
+            'payment_method' => $this->payment_method ?? 'Cash on Delivery',
             'user' => new UserResource($this->whenLoaded('user')),
             'items' => OrderItemResource::collection($this->whenLoaded('orderItems')),
             'created_at' => $this->created_at,

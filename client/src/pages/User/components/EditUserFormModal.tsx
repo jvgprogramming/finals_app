@@ -32,7 +32,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
     const[lastName, setLastName] = useState("")
     const[suffixName, setSuffixName] = useState("")
     // gender removed
-    const[birthDate, setBirthDate] = useState("")
     const[username, setUsername] = useState("")
     const[errors, setErrors] = useState<UserFieldErrors>({})
 
@@ -56,7 +55,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
             formData.append('last_name', lastName)
             formData.append('suffix_name', suffixName || "")
             // gender removed from payload
-            formData.append('birth_date', birthDate)
             formData.append('username', username)
 
             const res = await UserService.updateUser(user!.user_id.toString(), formData)
@@ -69,7 +67,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
                 setLastName(res.data.user.last_name)
                 setSuffixName(res.data.user.suffix_name ?? "")
                 // gender removed
-                setBirthDate(res.data.user.birth_date)
                 setUsername(res.data.user.username)
                 setErrors({});
 
@@ -105,7 +102,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
             setLastName(user.last_name)
             setSuffixName(user.suffix_name ?? "")
             // gender removed from user data
-            setBirthDate(user.birth_date)
             setUsername(user.username)
         }else {
             console.error('unexpected error occured during loading user data: user data is null or undefined: ', user)
@@ -181,17 +177,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
                     {/* Gender field removed */}
                 </div>
                 <div className="col-span-2 md:col-span-1">
-                    <div className="mb-4">
-                        <FloatingLabelInput
-                        label="Birth Date"
-                        type="date"
-                        name="birth_date"
-                        value={birthDate}
-                        onChange={(e) => setBirthDate(e.target.value)}
-                        required
-                        errors={errors.birth_date}
-                        />
-                    </div>
                     <div className="mb-4">
                         <FloatingLabelInput
                         label="Username"

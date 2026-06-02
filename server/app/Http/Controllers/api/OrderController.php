@@ -69,6 +69,8 @@ class OrderController extends Controller
             'status' => 'pending',
             'notes' => $data['notes'] ?? null,
             'delivery_date' => $data['delivery_date'] ?? null,
+            // Force payment method to Cash on Delivery regardless of client input
+            'payment_method' => 'Cash on Delivery',
         ]);
 
         // Create order items from cart

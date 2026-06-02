@@ -12,8 +12,6 @@ export interface UserColumns {
   suffix_name?: string | null;
   gender_id?: number | string;
   gender: GenderColumns;
-  birth_date: string;
-  age: number;
   username: string;
 }
 
@@ -25,7 +23,6 @@ export interface UserFieldErrors {
   last_name?: string[];
   suffix_name?: string[];
   gender?: string[];
-  birth_date?: string[];
   username?: string[];
   password?: string[];
   password_confirmation?: string[];

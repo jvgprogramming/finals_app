@@ -22,7 +22,6 @@ class UserFactory extends Factory
             'middle_name' => fake()->optional()->lastName(),
             'last_name' => fake()->lastName(),
             'suffix_name' => fake()->optional()->suffix(),
-            'birth_date' => fake()->dateTimeBetween('-60 years', '-18 years')->format('Y-m-d'),
             'username' => fake()->unique()->userName(),
             'password' => bcrypt('password123'),
             'profile_picture' => null,

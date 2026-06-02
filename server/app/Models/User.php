@@ -13,7 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['first_name', 'middle_name', 'last_name', 'suffix_name', 'birth_date', 'username', 'password', 'profile_picture', 'role'])]
+#[Fillable(['first_name', 'middle_name', 'last_name', 'suffix_name', 'username', 'password', 'profile_picture', 'role'])]
 #[Hidden(['password'])]
 /**
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order> $orders
@@ -35,23 +35,7 @@ class User extends Authenticatable
     {
         return [
             'password' => 'hashed',
-            'birth_date' => 'date',
         ];
-    }
-
-    /**
-     * Get the user's age computed attribute.
-     */
-    protected function age(): Attribute
-    {
-        return Attribute::make(
-            get: function ($value) {
-                if ($this->birth_date) {
-                    return $this->birth_date->diffInYears(now());
-                }
-                return null;
-            }
-        );
     }
 
     /**

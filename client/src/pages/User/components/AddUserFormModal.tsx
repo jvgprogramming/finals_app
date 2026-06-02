@@ -26,7 +26,6 @@ interface AddUserFormModalProps {
   const [lastName, setLastName] = useState('')
   const [suffixName, setSuffixName] = useState('')
   // gender removed
-  const [birthDate, setBirthDate] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [passwordConfirmation, setPasswordConfirmation] = useState('')
@@ -48,7 +47,6 @@ interface AddUserFormModalProps {
       formData.append('last_name', lastName)
       formData.append('suffix_name', suffixName || '')
       // gender removed from payload
-      formData.append('birth_date', birthDate)
       formData.append('username', username)
       formData.append('password', password)
       formData.append('password_confirmation', passwordConfirmation)
@@ -62,7 +60,6 @@ interface AddUserFormModalProps {
         setLastName('')
         setSuffixName('')
         // gender cleared (removed)
-        setBirthDate('')
         setUsername('')
         setPassword('')
         setPasswordConfirmation('')
@@ -148,17 +145,6 @@ interface AddUserFormModalProps {
               {/* Gender field removed from form (not relevant) */}
             </div>
             <div className="col-span-2 md:col-span-1">
-              <div className="mb-4">
-                <FloatingLabelInput
-                  label="Birth Date"
-                  type="date"
-                  name="birth_date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  required
-                  errors={errors.birth_date}
-                />
-              </div>
               <div className="mb-4">
                 <FloatingLabelInput
                   label="Username"

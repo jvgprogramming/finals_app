@@ -94,7 +94,10 @@ export function mapOrderFromApi(order: Order & Record<string, unknown>): UiOrder
     time,
     type: (order.type as string) ?? 'pickup',
     address: (order.address as string) ?? '',
-    paymentMethod: (order.paymentMethod as string) ?? 'Cash',
+    // API may return `payment_method` (snake_case) or `paymentMethod` (camelCase).
+    paymentMethod:
+      (order.payment_method as string) ?? (order.paymentMethod as string) ??
+      'Cash on Delivery',
     notes: order.notes ?? null,
     delivery_date: order.delivery_date ?? null,
     user,

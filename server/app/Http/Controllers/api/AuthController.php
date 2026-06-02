@@ -50,7 +50,6 @@ class AuthController extends Controller
             'last_name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'min:6', 'max:12', 'unique:users'],
             'password' => ['required', 'string', 'min:6', 'max:12', 'confirmed'],
-            'birth_date' => ['nullable', 'date'],
         ]);
 
         try {
@@ -59,7 +58,6 @@ class AuthController extends Controller
                 'last_name' => $validated['last_name'],
                 'username' => $validated['username'],
                 'password' => $validated['password'],
-                'birth_date' => $validated['birth_date'] ?? null,
                 'role' => 'customer',
             ]);
 

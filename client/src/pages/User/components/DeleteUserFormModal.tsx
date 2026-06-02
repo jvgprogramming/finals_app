@@ -21,7 +21,6 @@ const DeleteUserFormModal: React.FC<DeleteUserFormModalProps> = ({ user, onUserD
         const[middleName, setMiddleName] = useState("")
         const[lastName, setLastName] = useState("")
         const[suffixName, setSuffixName] = useState("")
-        const[birthDate, setBirthDate] = useState("")
         const[username, setUsername] = useState("")
 
         const handleDestroyUser = async (e:FormEvent) => {
@@ -52,7 +51,6 @@ const DeleteUserFormModal: React.FC<DeleteUserFormModalProps> = ({ user, onUserD
             setMiddleName(user.middle_name ?? "")
             setLastName(user.last_name)
             setSuffixName(user.suffix_name ?? "")
-            setBirthDate(user.birth_date)
             setUsername(user.username)
         }else {
             console.error('unexpected error occured during loading user data: user data is null or undefined: ', user)
@@ -98,12 +96,6 @@ const DeleteUserFormModal: React.FC<DeleteUserFormModalProps> = ({ user, onUserD
                     {/* Gender removed */}
                 </div>
                 <div className="col-span-2 md:col-span-1">
-                    <div className="mb-4">
-                        <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700">
-                            Birth Date
-                        </label>
-                        <p className="mt-1 text-sm text-gray-500">{birthDate}</p>
-                    </div>
                     <div className="mb-4">
                         <label htmlFor="username" className="block text-sm font-medium text-gray-700">
                             Username

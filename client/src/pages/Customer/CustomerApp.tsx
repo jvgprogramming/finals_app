@@ -1267,7 +1267,7 @@ function CheckoutModal({ cart, onClose, onSubmit }) {
     address: '',
     date: '',
     time: '12:00 PM',
-    paymentMethod: 'GCash', // 'GCash', 'Maya', 'Bank Transfer', 'COD'
+    paymentMethod: 'COD', // Only Cash on Delivery
     receiptImg: null, // Base64 receipt data
   });
 
@@ -1302,10 +1302,7 @@ function CheckoutModal({ cart, onClose, onSubmit }) {
       alert('Please specify a home address for delivery.');
       return;
     }
-    if (form.paymentMethod !== 'COD' && !form.receiptImg) {
-      alert('Please upload a payment receipt slip for digital verification.');
-      return;
-    }
+    // Payment is restricted to Cash on Delivery (no receipt required)
 
     onSubmit(form);
   };
@@ -1463,57 +1460,8 @@ function CheckoutModal({ cart, onClose, onSubmit }) {
 
                 <div className="form-group">
                   <label className="form-label">Payment Method</label>
-                  <select
-                    className="form-control"
-                    value={form.paymentMethod}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        paymentMethod: e.target.value,
-                      }))
-                    }
-                  >
-                    <option value="GCash">GCash Transfer</option>
-                    <option value="Maya">PayMaya Payment</option>
-                    <option value="Bank Transfer">
-                      BDO / BPI Bank Transfer
-                    </option>
-                    <option value="COD">Cash on Delivery / Pickup</option>
-                  </select>
+                  <div className="readonly-field">Cash on Delivery / Pickup</div>
                 </div>
-
-                {form.paymentMethod !== 'COD' && (
-                  <div className="form-group">
-                    <label className="form-label">
-                      Attach Payment Receipt Image *
-                    </label>
-                    <label className="receipt-upload-box">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={handleReceiptChange}
-                        required={form.paymentMethod !== 'COD'}
-                      />
-                      <CameraIcon style={{ width: 18, height: 18 }} className="upload-icon" aria-hidden />
-                      <span className="upload-text">
-                        {form.receiptImg
-                          ? 'Change Attached Slip'
-                          : 'Upload Reference Receipt'}
-                      </span>
-                      <span className="upload-subtext">
-                        Click to choose image file
-                      </span>
-                      {form.receiptImg && (
-                        <img
-                          src={form.receiptImg}
-                          alt="Receipt Preview"
-                          className="receipt-preview-img"
-                        />
-                      )}
-                    </label>
-                  </div>
-                )}
               </div>
 
               {/* Order total list summary column */}
@@ -1603,23 +1551,19 @@ function CheckoutModal({ cart, onClose, onSubmit }) {
                     </div>
                   </div>
 
-                  {form.paymentMethod !== 'COD' && (
-                    <div
-                      style={{
-                        marginTop: '24px',
-                        backgroundColor: 'var(--primary-light)',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        fontSize: '11px',
-                        color: 'var(--espresso)',
-                        border: '1px solid rgba(212, 124, 106, 0.15)',
-                      }}
-                    >
-                      <LightBulbIcon style={{ width: 16, height: 16 }} aria-hidden /> <strong>Mobile Payment Details:</strong> Send the exact
-                      amount to GCash / PayMaya: <strong>0917-123-4567</strong>{' '}
-                      (Nicai S.) and upload the payment slip image above!
-                    </div>
-                  )}
+                  <div
+                    style={{
+                      marginTop: '24px',
+                      backgroundColor: 'var(--primary-light)',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      color: 'var(--espresso)',
+                      border: '1px solid rgba(212, 124, 106, 0.08)',
+                    }}
+                  >
+                    <strong>Payment:</strong> Cash will be collected upon delivery or pickup.
+                  </div>
 
                   <button
                     type="submit"

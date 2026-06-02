@@ -146,20 +146,6 @@ useEffect(() => {
                 >
                   Full Name
                 </TableCell>
-                
-                {/* Gender column removed */}
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 text-left font-semibold tracking-wide"
-                >
-                  Birth Date
-                </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-5 py-3 text-left font-semibold tracking-wide"
-                >
-                  Age
-                </TableCell>
                 <TableCell
                   isHeader
                   className="px-5 py-3 text-center font-semibold tracking-wide"
@@ -190,13 +176,6 @@ useEffect(() => {
                     <TableCell className="px-5 py-3 text-left">
                       {handleUserFullNameFormat(user)}
                     </TableCell>
-                    {/* Gender removed */}
-                    <TableCell className="px-5 py-3 text-left">
-                      {user.birth_date}
-                    </TableCell>
-                    <TableCell className="px-5 py-3 text-left">
-                      {user.age}
-                    </TableCell>
                     <TableCell className="px-5 py-3">
                       <div className="flex items-center justify-center gap-4">
                         <button 
@@ -219,13 +198,13 @@ useEffect(() => {
                  ))
               ): !loadingUsers && (users.length ?? 0) <= 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="px-5 py-5 text-center font-medium">
+                  <TableCell colSpan={4} className="px-5 py-5 text-center font-medium">
                     NO USERS FOUND
                   </TableCell>
                 </TableRow>
               ):(
                 <TableRow>
-                  <TableCell colSpan={7} className="px-5 py-5 text-center">
+                  <TableCell colSpan={4} className="px-5 py-5 text-center">
                     <Spinner size="md"/>
                   </TableCell>
                 </TableRow>
@@ -234,7 +213,7 @@ useEffect(() => {
 
               {loadingUsers && (users.length ?? 0) > 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="px-5 py-5 text-center">
+                  <TableCell colSpan={4} className="px-5 py-5 text-center">
                     <Spinner size="md"/>
                   </TableCell>
                 </TableRow>

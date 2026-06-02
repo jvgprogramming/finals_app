@@ -29,7 +29,6 @@ class UpdateUserRequest extends FormRequest
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
             'suffix_name' => 'nullable|string|max:255',
-            'birth_date' => 'required|date',
             'username' => [
                 'required',
                 'string',
