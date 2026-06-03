@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -86,7 +86,18 @@ export default function CustomerApp() {
   const knownOrderIdsRef = useRef(new Set());
   const pollingReadyRef = useRef(false);
 
+  const clearUserSessionData = () => {
+    setOrders([]);
+    setNotifications([]);
+    knownOrderIdsRef.current = new Set();
+    pollingReadyRef.current = false;
+    setShakingBell(false);
+    setIsNotifPanelOpen(false);
+    setActiveView('customer-home');
+  };
+
   const handleLogout = async () => {
+    clearUserSessionData();
     await logout();
     setIsLoginOpen(false);
   };
@@ -151,10 +162,18 @@ export default function CustomerApp() {
     fetchProducts();
   }, []);
 
+  // Clear orders/notifications when logged out (prevents showing another account's data)
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      clearUserSessionData();
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
 
     const fetchOrders = async () => {
+      setOrders([]);
       setIsLoadingOrders(true);
       try {
         const ordersData = await OrderService.getOrders();
@@ -171,11 +190,11 @@ export default function CustomerApp() {
     };
 
     fetchOrders();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   // Fetch initial notifications (only if authenticated)
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user?.id) return;
 
     const fetchNotifications = async () => {
       try {
@@ -187,7 +206,7 @@ export default function CustomerApp() {
     };
 
     fetchNotifications();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   useNotificationPolling({
     interval: 10000,
@@ -690,7 +709,22 @@ export default function CustomerApp() {
                     My Orders & Delivery Tracker
                   </h3>
 
-                  {isLoadingOrders ? (
+                  {!isAuthenticated ? (
+                    <EmptyState
+                      title="Sign in to view your orders"
+                      description="Order history is tied to your account and is cleared when you log out."
+                      action={
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={() => setIsLoginOpen(true)}
+                          style={{ maxWidth: '200px', margin: '0 auto' }}
+                        >
+                          Sign in
+                        </button>
+                      }
+                    />
+                  ) : isLoadingOrders ? (
                     <LoadingSpinner label="Loading your orders…" />
                   ) : orders.length === 0 ? (
                     <div

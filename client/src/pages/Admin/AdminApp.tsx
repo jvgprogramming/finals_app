@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -99,11 +99,6 @@ export default function AdminApp() {
   const [isNotifPanelOpen, setIsNotifPanelOpen] = useState(false);
   const [pollStatus, setPollStatus] = useState('connected');
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/', { replace: true });
-  };
-
   const confirmLogout = async () => {
     setShowLogoutConfirm(false);
     await handleLogout();
@@ -168,15 +163,47 @@ export default function AdminApp() {
     fetchProducts();
   }, []);
 
+  const knownOrderIdsRef = useRef(new Set());
+  const pollingReadyRef = useRef(false);
+
+  const clearUserSessionData = () => {
+    setOrders([]);
+    setNotifications([]);
+    knownOrderIdsRef.current = new Set();
+    pollingReadyRef.current = false;
+    setShakingBell(false);
+    setAdminDetailOrder(null);
+  };
+
+  const handleLogout = async () => {
+    clearUserSessionData();
+    await logout();
+    navigate('/', { replace: true });
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setOrders([]);
+      setNotifications([]);
+      knownOrderIdsRef.current = new Set();
+      pollingReadyRef.current = false;
+      setShakingBell(false);
+      setAdminDetailOrder(null);
+    }
+  }, [isAuthenticated]);
+
   // Fetch orders on mount (only if authenticated)
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user?.id) return;
 
     const fetchOrders = async () => {
+      setOrders([]);
       setIsLoadingOrders(true);
       try {
         const ordersData = await OrderService.getOrders();
-        setOrders(mapOrdersFromApi(ordersData));
+        const mapped = mapOrdersFromApi(ordersData);
+        setOrders(mapped);
+        knownOrderIdsRef.current = new Set(mapped.map((o) => o.id));
         setFetchError(null);
       } catch (err) {
         console.error('Error fetching orders:', err);
@@ -187,11 +214,11 @@ export default function AdminApp() {
     };
 
     fetchOrders();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   // Fetch initial notifications (only if authenticated)
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user?.id) return;
 
     const fetchNotifications = async () => {
       try {
@@ -203,10 +230,7 @@ export default function AdminApp() {
     };
 
     fetchNotifications();
-  }, [isAuthenticated]);
-
-  const knownOrderIdsRef = useRef(new Set());
-  const pollingReadyRef = useRef(false);
+  }, [isAuthenticated, user?.id]);
 
   // Set up polling for notifications and orders (only if authenticated)
   useNotificationPolling({

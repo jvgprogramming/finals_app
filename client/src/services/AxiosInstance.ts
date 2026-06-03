@@ -21,7 +21,13 @@ AxiosInstance.interceptors.request.use((config) => {
 AxiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const url = String(error.config?.url ?? '');
+    const isAuthAttempt =
+      url.includes('/auth/login') || url.includes('/auth/register');
+
+    // Only clear session on 401 for protected routes (not failed login/register)
+    if (status === 401 && !isAuthAttempt) {
       localStorage.removeItem('auth_token');
     }
     return Promise.reject(error);

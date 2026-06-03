@@ -20,7 +20,7 @@ class UserSeeder extends Seeder
             'last_name' => 'Doe',
             'suffix_name' => null,
             'username' => 'johndoe',
-            'password' => bcrypt('password123'),
+            'password' => 'password123',
             'profile_picture' => null,
             'role' => 'admin',
         ]);
@@ -32,7 +32,7 @@ class UserSeeder extends Seeder
             'last_name' => 'Smith',
             'suffix_name' => null,
             'username' => 'janesmith',
-            'password' => bcrypt('password123'),
+            'password' => 'password123',
             'profile_picture' => null,
         ]);
 
@@ -42,7 +42,7 @@ class UserSeeder extends Seeder
             'last_name' => 'Johnson',
             'suffix_name' => 'Jr.',
             'username' => 'rjohnson',
-            'password' => bcrypt('password123'),
+            'password' => 'password123',
             'profile_picture' => null,
         ]);
 
@@ -52,7 +52,7 @@ class UserSeeder extends Seeder
             'last_name' => 'Brown',
             'suffix_name' => null,
             'username' => 'ebrown123',
-            'password' => bcrypt('password123'),
+            'password' => 'password123',
             'profile_picture' => null,
         ]);
 
@@ -62,7 +62,7 @@ class UserSeeder extends Seeder
             'last_name' => 'Wilson',
             'suffix_name' => null,
             'username' => 'mwilson',
-            'password' => bcrypt('password123'),
+            'password' => 'password123',
             'profile_picture' => null,
         ]);
     }
