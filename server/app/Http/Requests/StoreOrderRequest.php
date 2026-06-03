@@ -34,10 +34,10 @@ class StoreOrderRequest extends FormRequest
             'items.*.customization.custom_notes' => ['sometimes', 'string'],
             'notes' => ['sometimes', 'string', 'max:2000'],
             'delivery_date' => ['sometimes', 'date'],
-            'customer_name' => ['required', 'string', 'max:255'],
-            'customer_phone' => ['required', 'string', 'max:30'],
-            'fulfillment_type' => ['required', 'in:pickup,delivery'],
-            'delivery_address' => ['required_if:fulfillment_type,delivery', 'nullable', 'string', 'max:500'],
+            'customer_name' => ['sometimes', 'string', 'max:255'],
+            'customer_phone' => ['sometimes', 'string', 'max:30'],
+            'fulfillment_type' => ['sometimes', 'in:pickup,delivery'],
+            'delivery_address' => ['sometimes', 'nullable', 'string', 'max:500'],
             'delivery_fee' => ['sometimes', 'numeric', 'min:0'],
         ];
     }

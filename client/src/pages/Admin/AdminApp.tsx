@@ -1265,7 +1265,7 @@ export default function AdminApp() {
                         className="btn-primary"
                         onClick={openNewProductEditor}
                       >
-                        Add New Cake
+                        Add New Product
                       </button>
                     </div>
                   </div>
@@ -1300,7 +1300,7 @@ export default function AdminApp() {
                                 className="btn-primary"
                                 onClick={openNewProductEditor}
                               >
-                                Add New Cake
+                                Add New Product
                               </button>
                             }
                           />
@@ -1309,7 +1309,7 @@ export default function AdminApp() {
                           <div key={product.id} className="inventory-item-row">
                             <div className="inventory-item-meta">
                               <img
-                                src={product.image}
+                                src={resolveProductImageUrl(product.image) || '/images/placeholder.png'}
                                 alt={product.name}
                                 className="inventory-item-thumb"
                               />

@@ -7,11 +7,31 @@ export function resolveProductImageUrl(
   url: string | null | undefined,
 ): string | null {
   if (!url) return null;
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-    return url;
+  const normalized = url.replace(/\\/g, '/');
+
+  if (
+    normalized.startsWith('http://') ||
+    normalized.startsWith('https://') ||
+    normalized.startsWith('data:')
+  ) {
+    return normalized;
   }
-  if (url.startsWith('/')) {
-    return `${API_ORIGIN}${url}`;
+
+  if (normalized.startsWith('/')) {
+    return `${API_ORIGIN}${normalized}`;
   }
-  return `${API_ORIGIN}/storage/products/${url}`;
+
+  if (normalized.startsWith('products/')) {
+    return `${API_ORIGIN}/storage/${normalized}`;
+  }
+
+  if (normalized.startsWith('storage/')) {
+    return `${API_ORIGIN}/${normalized}`;
+  }
+
+  if (normalized.startsWith('public/')) {
+    return `${API_ORIGIN}/${normalized.replace(/^public\//, 'storage/')}`;
+  }
+
+  return `${API_ORIGIN}/storage/products/${normalized}`;
 }

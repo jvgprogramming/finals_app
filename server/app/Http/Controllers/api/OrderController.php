@@ -61,18 +61,36 @@ class OrderController extends Controller
     {
         $user = Auth::user();
         $data = $request->validated();
+        $customerName = trim((string) ($data['customer_name'] ?? ''));
 
-        $deliveryFee = ($data['fulfillment_type'] ?? 'pickup') === 'delivery'
+        if ($customerName === '') {
+            $customerName = trim(
+                implode(' ', array_filter([
+                    (string) ($user->first_name ?? ''),
+                    (string) ($user->last_name ?? ''),
+                ]))
+            );
+
+            if ($customerName === '') {
+                $customerName = (string) ($user->username ?? 'Guest');
+            }
+        }
+
+        $customerPhone = trim((string) ($data['customer_phone'] ?? ''));
+        $fulfillmentType = $data['fulfillment_type'] ?? 'pickup';
+        $deliveryAddress = $data['delivery_address'] ?? null;
+
+        $deliveryFee = $fulfillmentType === 'delivery'
             ? (float) ($data['delivery_fee'] ?? 50)
             : 0;
 
         // Create order
         $order = Order::create([
             'user_id' => $user->id,
-            'customer_name' => $data['customer_name'],
-            'customer_phone' => $data['customer_phone'],
-            'fulfillment_type' => $data['fulfillment_type'],
-            'delivery_address' => $data['delivery_address'] ?? null,
+            'customer_name' => $customerName,
+            'customer_phone' => $customerPhone !== '' ? $customerPhone : null,
+            'fulfillment_type' => $fulfillmentType,
+            'delivery_address' => $deliveryAddress,
             'order_number' => 'ORD-' . strtoupper(Str::random(8)),
             'status' => 'pending',
             'notes' => $data['notes'] ?? null,
@@ -118,7 +136,7 @@ class OrderController extends Controller
                 'user_id' => $admin->id,
                 'order_id' => $order->id,
                 'title' => 'New Order',
-                'message' => "New order {$order->order_number} from {$data['customer_name']}",
+                'message' => "New order {$order->order_number} from {$customerName}",
             ]);
         }
 

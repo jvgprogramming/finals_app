@@ -80,7 +80,6 @@ class ProductService {
       const response = await this.apiClient.post<{ success: boolean; data: Product }>('/products', formData, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
         },
       });
       return response.data.data;
@@ -102,7 +101,6 @@ class ProductService {
         {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
           },
         }
       );
