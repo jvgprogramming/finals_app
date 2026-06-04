@@ -15,6 +15,19 @@ class UpdateProductRequest extends FormRequest
         return \Illuminate\Support\Facades\Auth::check() && \Illuminate\Support\Facades\Auth::user()->role === 'admin';
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_available')) {
+            $this->merge([
+                'is_available' => filter_var(
+                    $this->input('is_available'),
+                    FILTER_VALIDATE_BOOLEAN,
+                    FILTER_NULL_ON_FAILURE,
+                ) ?? $this->input('is_available') === '1',
+            ]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -25,10 +38,10 @@ class UpdateProductRequest extends FormRequest
         return [
             'category_id' => ['sometimes', 'required', 'exists:categories,id'],
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['sometimes', 'required', 'string'],
+            'description' => ['sometimes', 'nullable', 'string'],
             'price' => ['sometimes', 'required', 'numeric', 'min:0'],
-            'is_available' => ['boolean'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'is_available' => ['sometimes', 'boolean'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
         ];
     }
 }

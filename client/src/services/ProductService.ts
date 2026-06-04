@@ -24,9 +24,29 @@ export interface ProductFilters {
   direction?: 'asc' | 'desc';
 }
 
+function formatApiError(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as {
+      message?: string;
+      errors?: Record<string, string[]>;
+    } | undefined;
+    if (data?.errors) {
+      const first = Object.values(data.errors).flat()[0];
+      if (first) return first;
+    }
+    if (data?.message) return data.message;
+    if (error.response?.status === 401) return 'Please log in again as admin.';
+    if (error.response?.status === 403) return 'You do not have permission to manage products.';
+  }
+  return 'Request failed. Please try again.';
+}
+
 class ProductService {
   private apiClient = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+    headers: {
+      Accept: 'application/json',
+    },
   });
 
   /**
@@ -84,7 +104,7 @@ class ProductService {
       return response.data.data;
     } catch (error) {
       console.error('Error creating product:', error);
-      throw error;
+      throw new Error(formatApiError(error));
     }
   }
 
@@ -106,7 +126,7 @@ class ProductService {
       return response.data.data;
     } catch (error) {
       console.error('Error updating product:', error);
-      throw error;
+      throw new Error(formatApiError(error));
     }
   }
 

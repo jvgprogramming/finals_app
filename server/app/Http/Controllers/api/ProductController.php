@@ -65,6 +65,8 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $data['description'] = trim((string) ($data['description'] ?? ''));
+        $data['is_available'] = $data['is_available'] ?? true;
 
         // Handle image upload
         if ($request->hasFile('image')) {

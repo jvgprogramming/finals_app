@@ -614,7 +614,7 @@ export default function AdminApp() {
     const formData = new FormData();
     formData.append('name', newProductForm.name);
     formData.append('price', parseFloat(newProductForm.price));
-    formData.append('description', newProductForm.description);
+    formData.append('description', newProductForm.description?.trim() ?? '');
     formData.append('category_id', newProductForm.category_id);
     formData.append('is_available', newProductForm.is_available ? '1' : '0');
     
@@ -649,7 +649,9 @@ export default function AdminApp() {
       cancelProductEdit();
     } catch (err) {
       console.error('Error saving product:', err);
-      alert('Failed to save product');
+      const message =
+        err instanceof Error ? err.message : 'Failed to save product';
+      alert(message);
     }
   };
 
@@ -1501,7 +1503,7 @@ export default function AdminApp() {
                             </div>
 
                             <div className="product-image-instructions">
-                              <p>Upload a product image (JPEG, PNG, GIF up to 2MB)</p>
+                              <p>Upload a product image (JPEG, PNG, GIF, WebP up to 2MB)</p>
                             </div>
 
                           </div>
