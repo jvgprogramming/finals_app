@@ -11,7 +11,6 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  stock: number;
   is_available: boolean;
   image_url: string | null;
   category: Category;

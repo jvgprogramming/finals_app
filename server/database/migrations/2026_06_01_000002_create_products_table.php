@@ -18,7 +18,6 @@ return new class extends Migration
             $table->text('description');
             $table->decimal('price', 10, 2);
             $table->string('image_path')->nullable();
-            $table->integer('stock')->default(0);
             $table->boolean('is_available')->default(true);
             $table->timestamps();
             $table->softDeletes();

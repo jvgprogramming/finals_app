@@ -22,7 +22,9 @@ import { formatPeso } from '../../utils/currency';
 import { formatDeliveryDateForApi } from '../../utils/checkoutDate';
 import {
   getPriceForSize,
-  CAKE_SIZE_OPTIONS,
+  getSizeOptionsForCategory,
+  getSizeOptionLabel,
+  isPastryOrBreadCategory,
 } from '../../utils/productPricing';
 import {
   BellIcon,
@@ -238,7 +240,13 @@ export default function CustomerApp() {
   // Add item to cart
   const handleAddToCart = (product, options) => {
     const cartItemId = Date.now().toString();
-    const unitPrice = getPriceForSize(product.price, options.size);
+    const categoryName =
+      product.categoryLabel || product.category?.name || '';
+    const unitPrice = getPriceForSize(
+      product.price,
+      options.size,
+      categoryName,
+    );
     const newCartItem = {
       cartItemId,
       id: product.id,
@@ -247,7 +255,6 @@ export default function CustomerApp() {
       image: product.image || product.image_url || '/images/placeholder.png',
       quantity: options.quantity,
       size: options.size,
-      flavor: options.flavor,
       dedication: options.dedication,
     };
 
@@ -286,7 +293,6 @@ export default function CustomerApp() {
         const customization: Record<string, string> = {};
         if (item.dedication) customization.dedication_message = item.dedication;
         if (item.size) customization.size = item.size;
-        if (item.flavor) customization.flavor = item.flavor;
         return {
           product_id: item.id,
           quantity: item.quantity,
@@ -655,7 +661,7 @@ export default function CustomerApp() {
                           >
                             {!product.is_available && (
                               <div className="sold-out-overlay">
-                                <span className="sold-out-badge">Sold Out</span>
+                                <span className="sold-out-badge">Not Available</span>
                               </div>
                             )}
                             <div className="card-img-wrapper">
@@ -675,7 +681,12 @@ export default function CustomerApp() {
                                 <span className="card-price">
                                   {formatPeso(product.price)}
                                   <small style={{ display: 'block', fontWeight: 400, fontSize: '11px' }}>
-                                    from 6&quot; size
+                                    {isPastryOrBreadCategory(
+                                      product.categoryLabel ||
+                                        product.category?.name,
+                                    )
+                                      ? 'from 6 pcs'
+                                      : 'from 6" size'}
                                   </small>
                                 </span>
                                 <button
@@ -685,7 +696,7 @@ export default function CustomerApp() {
                                 >
                                   {product.available
                                     ? 'Order Now'
-                                    : 'Out of Stock'}
+                                    : 'Not Available'}
                                 </button>
                               </div>
                             </div>
@@ -888,7 +899,8 @@ export default function CustomerApp() {
                                         paddingLeft: '24px',
                                       }}
                                     >
-                                      Size: {item.size} | Flavor: {item.flavor}
+                                      Size: {item.size}
+                                      {item.flavor ? ` | Flavor: ${item.flavor}` : ''}
                                       {item.dedication &&
                                         ` | Dedication: "${item.dedication}"`}
                                     </span>
@@ -1049,18 +1061,28 @@ export default function CustomerApp() {
 // Helper Sub-Component 1: Product Customization Modal
 // ==========================================================================
 function ProductModal({ product, onClose, onAddToCart }) {
-  const defaultFlavors = ['Classic Vanilla', 'Strawberry Dream', 'Salted Caramel Fudge'];
-
-  const flavors = product.flavors || defaultFlavors;
   const categoryName =
     product.categoryLabel || product.category?.name || '';
+  const isAvailable = product.is_available ?? product.available ?? true;
+  const sizeOptions = getSizeOptionsForCategory(categoryName);
+  const sizeLabel = getSizeOptionLabel(categoryName);
 
-  const [selectedSize, setSelectedSize] = useState(CAKE_SIZE_OPTIONS[0].label);
-  const [selectedFlavor, setSelectedFlavor] = useState(flavors[0]);
+  const [selectedSize, setSelectedSize] = useState(sizeOptions[0].label);
   const [dedication, setDedication] = useState('');
   const [quantity, setQuantity] = useState(1);
 
-  const unitPrice = getPriceForSize(product.price, selectedSize);
+  useEffect(() => {
+    const options = getSizeOptionsForCategory(categoryName);
+    setSelectedSize(options[0].label);
+    setDedication('');
+    setQuantity(1);
+  }, [product.id, categoryName]);
+
+  const unitPrice = getPriceForSize(
+    product.price,
+    selectedSize,
+    categoryName,
+  );
   const lineTotal = unitPrice * quantity;
   const imageSrc =
     product.image || product.image_url || '/images/placeholder.png';
@@ -1068,9 +1090,9 @@ function ProductModal({ product, onClose, onAddToCart }) {
   const charLimit = 40;
 
   const handleSubmit = () => {
+    if (!isAvailable) return;
     onAddToCart(product, {
       size: selectedSize,
-      flavor: selectedFlavor,
       dedication: categoryName.includes('Cakes') ? dedication : '',
       quantity,
     });
@@ -1118,9 +1140,9 @@ function ProductModal({ product, onClose, onAddToCart }) {
 
             {/* Custom options: size */}
             <div className="option-group">
-              <span className="option-label">Select Cake Size</span>
+              <span className="option-label">{sizeLabel}</span>
               <div className="option-selector">
-                {CAKE_SIZE_OPTIONS.map((sizeOption) => (
+                {sizeOptions.map((sizeOption) => (
                   <label
                     key={sizeOption.label}
                     className="radio-tile-wrapper"
@@ -1137,40 +1159,13 @@ function ProductModal({ product, onClose, onAddToCart }) {
                       <br />
                       <small style={{ opacity: 0.85 }}>
                         {formatPeso(
-                          getPriceForSize(product.price, sizeOption.label),
+                          getPriceForSize(
+                            product.price,
+                            sizeOption.label,
+                            categoryName,
+                          ),
                         )}
                       </small>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Custom options: flavors */}
-            <div className="option-group">
-              <span className="option-label">Select Flavor Selection</span>
-              <div
-                className="option-selector"
-                style={{ gridTemplateColumns: '1fr' }}
-              >
-                {flavors.map((flavor) => (
-                  <label
-                    key={flavor}
-                    className="radio-tile-wrapper"
-                    style={{ width: '100%' }}
-                  >
-                    <input
-                      type="radio"
-                      name="flavor-options"
-                      className="radio-tile-input"
-                      checked={selectedFlavor === flavor}
-                      onChange={() => setSelectedFlavor(flavor)}
-                    />
-                    <span
-                      className="radio-tile-content"
-                      style={{ textAlign: 'left', paddingLeft: '16px' }}
-                    >
-                      {flavor}
                     </span>
                   </label>
                 ))}
@@ -1218,8 +1213,15 @@ function ProductModal({ product, onClose, onAddToCart }) {
                 </button>
               </div>
 
-              <button type="button" className="btn-primary" onClick={handleSubmit}>
-                Add to Cart · {formatPeso(lineTotal)}
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleSubmit}
+                disabled={!isAvailable}
+              >
+                {isAvailable
+                  ? `Add to Cart · ${formatPeso(lineTotal)}`
+                  : 'Not Available'}
               </button>
             </div>
           </div>
@@ -1289,7 +1291,6 @@ function CartDrawer({
                   <h4 className="cart-item-name">{item.name}</h4>
                   <div className="cart-item-meta">
                     <span>Size: {item.size}</span>
-                    <span>Flavor: {item.flavor}</span>
                     {item.dedication && (
                       <span style={{ fontStyle: 'italic' }}>
                         Icing: "{item.dedication}"

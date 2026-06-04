@@ -19,8 +19,14 @@ export interface UiOrder {
     size?: string;
     flavor?: string;
   }>;
+  /** Scheduled fulfillment date (from delivery_date) */
   date: string;
+  /** Scheduled fulfillment time (from delivery_date) */
   time: string;
+  placedDate: string;
+  placedTime: string;
+  scheduledDate: string;
+  scheduledTime: string;
   created_at?: string;
   type?: string;
   address?: string;
@@ -32,17 +38,37 @@ export interface UiOrder {
   raw?: Order;
 }
 
-function formatDateParts(iso: string | undefined): { date: string; time: string } {
-  if (!iso) {
-    return { date: '—', time: '—' };
-  }
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) {
+const dateFormat: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+};
+
+const timeFormat: Intl.DateTimeFormatOptions = {
+  hour: 'numeric',
+  minute: '2-digit',
+};
+
+/** Parse Laravel / ISO datetimes reliably in the browser. */
+export function parseApiDateTime(value: string | undefined | null): Date | null {
+  if (!value) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+
+  const normalized = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T');
+  const d = new Date(normalized);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+function formatDateParts(iso: string | undefined | null): { date: string; time: string } {
+  const d = parseApiDateTime(iso ?? undefined);
+  if (!d) {
     return { date: '—', time: '—' };
   }
   return {
-    date: d.toLocaleDateString(),
-    time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    date: d.toLocaleDateString(undefined, dateFormat),
+    time: d.toLocaleTimeString(undefined, timeFormat),
   };
 }
 
@@ -51,10 +77,19 @@ function capitalizeStatus(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
 }
 
+function readCustomization(row: Record<string, unknown>) {
+  const raw = row.customization;
+  if (!raw || typeof raw !== 'object') return {};
+  return raw as {
+    dedication_message?: string;
+    size?: string;
+    flavor?: string;
+  };
+}
+
 export function mapOrderFromApi(order: Order & Record<string, unknown>): UiOrder {
-  const scheduleSource =
-    (order.delivery_date as string) ?? (order.created_at as string);
-  const { date, time } = formatDateParts(scheduleSource);
+  const placed = formatDateParts(order.created_at as string);
+  const scheduled = formatDateParts(order.delivery_date as string);
 
   const user = order.user as Order['user'] | undefined;
   const customerName =
@@ -71,6 +106,7 @@ export function mapOrderFromApi(order: Order & Record<string, unknown>): UiOrder
 
   const items = apiItems.map((item) => {
     const row = item as unknown as Record<string, unknown>;
+    const customization = readCustomization(row);
     return {
       id: row.id as number | undefined,
       name:
@@ -79,10 +115,9 @@ export function mapOrderFromApi(order: Order & Record<string, unknown>): UiOrder
         'Product',
       price: Number(row.price ?? row.product_price_snapshot ?? 0),
       quantity: Number(row.quantity ?? 1),
-      dedication: (row.customization as { dedication_message?: string })
-        ?.dedication_message,
-      size: (row.customization as { size?: string })?.size,
-      flavor: (row.customization as { flavor?: string })?.flavor,
+      dedication: customization.dedication_message || undefined,
+      size: customization.size,
+      flavor: customization.flavor,
     };
   });
 
@@ -103,8 +138,12 @@ export function mapOrderFromApi(order: Order & Record<string, unknown>): UiOrder
     status: capitalizeStatus(statusRaw),
     statusKey: statusRaw,
     items,
-    date,
-    time,
+    date: scheduled.date,
+    time: scheduled.time,
+    placedDate: placed.date,
+    placedTime: placed.time,
+    scheduledDate: scheduled.date,
+    scheduledTime: scheduled.time,
     created_at: order.created_at as string | undefined,
     type: fulfillmentType,
     address:
@@ -133,10 +172,20 @@ export function orderMatchesFilter(order: UiOrder, filter: string): boolean {
   return key === filter.toLowerCase();
 }
 
-/** Submitted date label for order cards */
+/** When the order was submitted (created_at). */
+export function formatPlacedAt(order: UiOrder): string {
+  if (order.placedDate === '—' || order.placedTime === '—') return '—';
+  return `${order.placedDate} at ${order.placedTime}`;
+}
+
+/** Submitted date/time label for order cards */
 export function formatSubmittedAt(order: UiOrder): string {
-  if (!order.created_at) return '—';
-  const d = new Date(order.created_at);
-  if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleDateString();
+  return formatPlacedAt(order);
+}
+
+/** Scheduled pickup/delivery slot label */
+export function formatScheduledAt(order: UiOrder): string {
+  if (!order.delivery_date && order.scheduledDate === '—') return '—';
+  if (order.scheduledDate === '—' || order.scheduledTime === '—') return '—';
+  return `${order.scheduledDate} at ${order.scheduledTime}`;
 }

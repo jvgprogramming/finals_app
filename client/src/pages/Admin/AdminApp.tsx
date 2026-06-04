@@ -6,8 +6,15 @@ import ProductService from '../../services/ProductService';
 import OrderService from '../../services/OrderService';
 import NotificationService from '../../services/NotificationService';
 import useNotificationPolling from '../../hooks/useNotificationPolling';
-import { mapProductsFromApi } from '../../utils/mapProduct';
-import { mapOrdersFromApi, mapOrderFromApi, orderMatchesFilter } from '../../utils/mapOrder';
+import { mapProductFromApi, mapProductsFromApi } from '../../utils/mapProduct';
+import {
+  mapOrdersFromApi,
+  mapOrderFromApi,
+  orderMatchesFilter,
+  formatPlacedAt,
+  formatScheduledAt,
+} from '../../utils/mapOrder';
+import { formatDeliveryDateForApi } from '../../utils/checkoutDate';
 import AdminDetailModal from '../../components/admin/AdminDetailModal';
 import NotificationPanel from '../../components/admin/NotificationPanel';
 import SalesTrendChart from '../../components/admin/SalesTrendChart';
@@ -87,10 +94,10 @@ export default function AdminApp() {
     price: '',
     description: '',
     category_id: '',
-    stock: '',
     is_available: true,
     image: null,
   });
+  const [togglingProductId, setTogglingProductId] = useState(null);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
@@ -322,7 +329,9 @@ export default function AdminApp() {
       const orderData = {
         items: orderItems,
         notes: checkoutForm.paymentMethod ? `Payment: ${checkoutForm.paymentMethod}` : '',
-        delivery_date: checkoutForm.date ? new Date(`${checkoutForm.date}T${checkoutForm.time}`).toISOString() : null,
+        delivery_date: checkoutForm.date
+          ? formatDeliveryDateForApi(checkoutForm.date, checkoutForm.time)
+          : null,
       };
 
       // Create order via API
@@ -468,19 +477,55 @@ export default function AdminApp() {
     }
   };
 
-  // Toggle dynamic product availability state
-  const handleToggleProductStock = (productId) => {
+  const handleToggleProductAvailability = async (productId) => {
+    const product = products.find((p) => p.id === productId);
+    if (!product || togglingProductId === productId) return;
+
+    const nextAvailable = !(product.is_available ?? product.available);
+
+    setTogglingProductId(productId);
     setProducts((prev) =>
-      prev.map((product) =>
-        product.id === productId
-          ? { ...product, available: !product.available }
-          : product,
+      prev.map((p) =>
+        p.id === productId
+          ? {
+              ...p,
+              is_available: nextAvailable,
+              available: nextAvailable,
+            }
+          : p,
       ),
     );
 
-    const prod = products.find((p) => p.id === productId);
-    const stateText = !prod.available ? 'back in stock' : 'marked out of stock';
-    addToast(`${prod.name} is now ${stateText}!`, 'info');
+    try {
+      const formData = new FormData();
+      formData.append('is_available', nextAvailable ? '1' : '0');
+      const savedProduct = await ProductService.updateProduct(
+        productId,
+        formData,
+      );
+      const mappedProduct = mapProductFromApi(savedProduct);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === productId ? mappedProduct : p)),
+      );
+      const stateText = nextAvailable ? 'available for order' : 'not available';
+      addToast(`${product.name} is now ${stateText}.`, 'info');
+    } catch (err) {
+      console.error('Error updating product availability:', err);
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === productId
+            ? {
+                ...p,
+                is_available: product.is_available,
+                available: product.available,
+              }
+            : p,
+        ),
+      );
+      addToast(`Failed to update ${product.name}. Please try again.`, 'error');
+    } finally {
+      setTogglingProductId(null);
+    }
   };
 
   const setProductImageFromFile = (file) => {
@@ -571,7 +616,6 @@ export default function AdminApp() {
     formData.append('price', parseFloat(newProductForm.price));
     formData.append('description', newProductForm.description);
     formData.append('category_id', newProductForm.category_id);
-    formData.append('stock', parseInt(newProductForm.stock) || 0);
     formData.append('is_available', newProductForm.is_available ? '1' : '0');
     
     const imageFile = productImageFileRef.current;
@@ -616,8 +660,7 @@ export default function AdminApp() {
       price: product.price,
       description: product.description,
       category_id: product.category?.id || '',
-      stock: product.stock || 0,
-      is_available: product.is_available || true,
+      is_available: product.is_available ?? true,
       image: product.image || product.image_url || null,
     });
     productImageFileRef.current = null;
@@ -634,7 +677,6 @@ export default function AdminApp() {
       price: '',
       description: '',
       category_id: '',
-      stock: '',
       is_available: true,
       image: null,
     });
@@ -1160,7 +1202,10 @@ export default function AdminApp() {
                                 <span>
                                   {order.items.length} product(s) · Total: ₱
                                   {order.totalPrice.toLocaleString()} ·
-                                  Requested: {order.date} @ {order.time}
+                                  Placed: {formatPlacedAt(order)}
+                                  {order.delivery_date
+                                    ? ` · Scheduled: ${formatScheduledAt(order)}`
+                                    : ''}
                                 </span>
                               </div>
                             </div>
@@ -1258,7 +1303,7 @@ export default function AdminApp() {
                       }}
                     >
                       <span style={{ fontSize: '14px', color: 'var(--cocoa)' }}>
-                        Modify menu prices and toggle stock states in real-time.
+                        Modify menu prices and toggle availability in real-time.
                       </span>
                       <button
                         type="button"
@@ -1360,19 +1405,24 @@ export default function AdminApp() {
                                   style={{
                                     fontSize: '11px',
                                     fontWeight: '600',
-                                    color: product.available
+                                    color: product.is_available
                                       ? 'var(--success)'
                                       : 'var(--danger)',
                                   }}
                                 >
-                                  {product.available ? 'In Stock' : 'Sold Out'}
+                                  {product.is_available
+                                    ? 'Available'
+                                    : 'Not Available'}
                                 </span>
                                 <label className="switch">
                                   <input
                                     type="checkbox"
-                                    checked={product.available}
+                                    checked={product.is_available}
+                                    disabled={togglingProductId === product.id}
                                     onChange={() =>
-                                      handleToggleProductStock(product.id)
+                                      handleToggleProductAvailability(
+                                        product.id,
+                                      )
                                     }
                                   />
                                   <span className="slider"></span>
@@ -1541,38 +1591,21 @@ export default function AdminApp() {
                               />
                             </div>
 
-                            <div className="form-row">
-                              <div className="form-group">
-                                <label className="form-label">Stock Quantity</label>
+                            <div className="form-group">
+                              <label className="form-label">
                                 <input
-                                  type="number"
-                                  className="form-control"
-                                  placeholder="e.g. 10"
-                                  value={newProductForm.stock}
+                                  type="checkbox"
+                                  checked={newProductForm.is_available}
                                   onChange={(e) =>
                                     setNewProductForm((prev) => ({
                                       ...prev,
-                                      stock: e.target.value,
+                                      is_available: e.target.checked,
                                     }))
                                   }
+                                  style={{ marginRight: '8px' }}
                                 />
-                              </div>
-                              <div className="form-group">
-                                <label className="form-label">
-                                  <input
-                                    type="checkbox"
-                                    checked={newProductForm.is_available}
-                                    onChange={(e) =>
-                                      setNewProductForm((prev) => ({
-                                        ...prev,
-                                        is_available: e.target.checked,
-                                      }))
-                                    }
-                                    style={{ marginRight: '8px' }}
-                                  />
-                                  Available for Order
-                                </label>
-                              </div>
+                                Available for Order
+                              </label>
                             </div>
 
                             <div

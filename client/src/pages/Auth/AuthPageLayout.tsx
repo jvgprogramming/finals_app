@@ -24,7 +24,7 @@ const AuthPageLayout: FC<AuthPageLayoutProps> = ({ children }) => {
           <div className="auth-hero-grid">
             <div className="auth-hero-card">
               <span className="auth-hero-card-label">Inventory</span>
-              <strong>Fresh stock visibility</strong>
+              <strong>Menu availability</strong>
             </div>
             <div className="auth-hero-card">
               <span className="auth-hero-card-label">Users</span>

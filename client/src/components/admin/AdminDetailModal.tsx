@@ -78,10 +78,14 @@ export default function AdminDetailModal({
                 <strong>Phone:</strong> {order.customerPhone}
                 <br />
                 <CalendarDaysIcon style={{ width: 14, height: 14 }} aria-hidden />{' '}
-                <strong>Requested Date:</strong> {order.date}
+                <strong>Order Placed:</strong>{' '}
+                {order.placedDate ?? '—'} at {order.placedTime ?? '—'}
+                <br />
+                <CalendarDaysIcon style={{ width: 14, height: 14 }} aria-hidden />{' '}
+                <strong>Scheduled Date:</strong> {order.scheduledDate ?? order.date}
                 <br />
                 <ClockIcon style={{ width: 14, height: 14 }} aria-hidden />{' '}
-                <strong>Requested Time:</strong> {order.time}
+                <strong>Scheduled Time:</strong> {order.scheduledTime ?? order.time}
                 <br />
                 <MapPinIcon style={{ width: 14, height: 14 }} aria-hidden />{' '}
                 <strong>Fulfillment:</strong>{' '}
@@ -109,6 +113,26 @@ export default function AdminDetailModal({
                   >
                     <strong>{item.quantity}x</strong> {item.name} — ₱
                     {(item.price * item.quantity).toLocaleString()}
+                    {item.size && (
+                      <>
+                        <br />
+                        <span style={{ opacity: 0.85 }}>Size / Qty: {item.size}</span>
+                      </>
+                    )}
+                    {item.dedication && (
+                      <>
+                        <br />
+                        <span style={{ opacity: 0.85 }}>
+                          Dedication: &ldquo;{item.dedication}&rdquo;
+                        </span>
+                      </>
+                    )}
+                    {item.flavor && (
+                      <>
+                        <br />
+                        <span style={{ opacity: 0.85 }}>Flavor: {item.flavor}</span>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -24,7 +24,6 @@ class ProductSeeder extends Seeder
                 'name' => 'Strawberry Velvet Gateau',
                 'description' => 'Layers of moist red velvet sponge with fresh strawberries and cream cheese frosting.',
                 'price' => 1250.00,
-                'stock' => 12,
                 'is_available' => true,
             ],
             [
@@ -32,7 +31,6 @@ class ProductSeeder extends Seeder
                 'name' => 'Chocolate Truffle Delight',
                 'description' => 'Rich dark chocolate cake with truffle ganache and gold-dusted finish.',
                 'price' => 1450.00,
-                'stock' => 8,
                 'is_available' => true,
             ],
             [
@@ -40,7 +38,6 @@ class ProductSeeder extends Seeder
                 'name' => 'Salted Caramel Éclair',
                 'description' => 'Choux pastry filled with salted caramel cream and dark chocolate glaze.',
                 'price' => 185.00,
-                'stock' => 24,
                 'is_available' => true,
             ],
             [
@@ -48,7 +45,6 @@ class ProductSeeder extends Seeder
                 'name' => 'Mango Passion Tart',
                 'description' => 'Buttery tart shell with mango-passion fruit curd and torched meringue.',
                 'price' => 220.00,
-                'stock' => 18,
                 'is_available' => true,
             ],
             [
@@ -56,7 +52,6 @@ class ProductSeeder extends Seeder
                 'name' => 'Honey Oat Loaf',
                 'description' => 'Soft artisan loaf with local honey, rolled oats, and sunflower seeds.',
                 'price' => 165.00,
-                'stock' => 30,
                 'is_available' => true,
             ],
             [
@@ -64,7 +59,6 @@ class ProductSeeder extends Seeder
                 'name' => 'Garlic Herb Focaccia',
                 'description' => 'Olive oil focaccia topped with roasted garlic, rosemary, and sea salt.',
                 'price' => 195.00,
-                'stock' => 20,
                 'is_available' => true,
             ],
         ];

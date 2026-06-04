@@ -20,7 +20,6 @@ class ProductResource extends JsonResource
             'name' => $this->name,
             'description' => $this->description,
             'price' => (float) $this->price,
-            'stock' => $this->stock,
             'is_available' => $this->is_available,
             'image_url' => $this->image_path
                 ? url(Storage::url('products/' . $this->image_path))
