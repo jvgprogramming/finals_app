@@ -1014,6 +1014,7 @@ export default function CustomerApp() {
       {isCheckoutOpen && (
         <CheckoutModal
           cart={cart}
+          user={user}
           isSubmitting={isPlacingOrder}
           onClose={() => setIsCheckoutOpen(false)}
           onSubmit={handlePlaceOrder}
@@ -1373,20 +1374,67 @@ function CartDrawer({
   );
 }
 
+/** Return today's date as YYYY-MM-DD string. */
+function getTodayStr() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 // ==========================================================================
 // Helper Sub-Component 3: Checkout Modal with Receipt Upload Preview
 // ==========================================================================
-function CheckoutModal({ cart, onClose, onSubmit, isSubmitting = false }) {
+function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) {
+  const defaultName = user
+    ? `${user.first_name} ${user.last_name}`.trim()
+    : '';
+
+  const todayStr = getTodayStr();
+
+  const TIME_SLOTS = [
+    { value: '9:00 AM - 11:00 AM', startHour: 9, startMin: 0 },
+    { value: '12:00 PM - 2:00 PM', startHour: 12, startMin: 0 },
+    { value: '3:00 PM - 5:00 PM', startHour: 15, startMin: 0 },
+    { value: '6:00 PM - 8:00 PM', startHour: 18, startMin: 0 },
+  ];
+
   const [form, setForm] = useState({
-    name: '',
+    name: defaultName,
     phone: '',
     type: 'pickup', // 'pickup', 'delivery'
     address: '',
-    date: '',
-    time: '12:00 PM',
+    date: todayStr,
+    time: '12:00 PM - 2:00 PM',
     paymentMethod: 'COD', // Only Cash on Delivery
     receiptImg: null, // Base64 receipt data
   });
+
+  // Filter time slots: hide past slots when the selected date is today
+  const availableTimeSlots = useMemo(() => {
+    if (form.date !== todayStr) return TIME_SLOTS;
+
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMin = now.getMinutes();
+
+    const filtered = TIME_SLOTS.filter(
+      (slot) =>
+        slot.startHour > currentHour ||
+        (slot.startHour === currentHour && slot.startMin >= currentMin),
+    );
+
+    // If all slots for today are past, return the last slot as a fallback
+    return filtered.length > 0 ? filtered : [TIME_SLOTS[TIME_SLOTS.length - 1]];
+  }, [form.date, todayStr]);
+
+  // Auto-adjust selected time if current slot is no longer available
+  useEffect(() => {
+    if (!availableTimeSlots.some((s) => s.value === form.time)) {
+      setForm((prev) => ({ ...prev, time: availableTimeSlots[0].value }));
+    }
+  }, [availableTimeSlots]);
 
   const subtotal = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -1497,7 +1545,7 @@ function CheckoutModal({ cart, onClose, onSubmit, isSubmitting = false }) {
                       setForm((prev) => ({ ...prev, type: 'pickup' }))
                     }
                   >
-                    <HomeIcon style={{ width: 16, height: 16 }} aria-hidden /> Store Pickup ({formatPeso(0)})
+                    Store Pickup ({formatPeso(0)})
                   </div>
                   <div
                     className={`toggle-option ${form.type === 'delivery' ? 'active' : ''}`}
@@ -1505,7 +1553,7 @@ function CheckoutModal({ cart, onClose, onSubmit, isSubmitting = false }) {
                       setForm((prev) => ({ ...prev, type: 'delivery' }))
                     }
                   >
-                    <HomeIcon style={{ width: 16, height: 16 }} aria-hidden /> Home Delivery ({formatPeso(50)})
+                    Home Delivery ({formatPeso(50)})
                   </div>
                 </div>
 
@@ -1536,6 +1584,7 @@ function CheckoutModal({ cart, onClose, onSubmit, isSubmitting = false }) {
                     <input
                       type="date"
                       className="form-control"
+                      min={todayStr}
                       required
                       value={form.date}
                       onChange={(e) =>
@@ -1552,18 +1601,21 @@ function CheckoutModal({ cart, onClose, onSubmit, isSubmitting = false }) {
                         setForm((prev) => ({ ...prev, time: e.target.value }))
                       }
                     >
-                      <option value="9:00 AM - 11:00 AM">
-                        9:00 AM - 11:00 AM
-                      </option>
-                      <option value="12:00 PM - 2:00 PM">
-                        12:00 PM - 2:00 PM
-                      </option>
-                      <option value="3:00 PM - 5:00 PM">
-                        3:00 PM - 5:00 PM
-                      </option>
-                      <option value="6:00 PM - 8:00 PM">
-                        6:00 PM - 8:00 PM
-                      </option>
+                      {TIME_SLOTS.map((slot) => {
+                        const isDisabled = !availableTimeSlots.some(
+                          (s) => s.value === slot.value,
+                        );
+                        return (
+                          <option
+                            key={slot.value}
+                            value={slot.value}
+                            disabled={isDisabled}
+                          >
+                            {slot.value}
+                            {isDisabled ? ' (unavailable)' : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 </div>

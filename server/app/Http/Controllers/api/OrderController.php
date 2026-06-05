@@ -14,6 +14,7 @@ use App\Support\CakePricing;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class OrderController extends Controller
@@ -84,50 +85,54 @@ class OrderController extends Controller
             ? (float) ($data['delivery_fee'] ?? 50)
             : 0;
 
-        // Create order
-        $order = Order::create([
-            'user_id' => $user->id,
-            'customer_name' => $customerName,
-            'customer_phone' => $customerPhone !== '' ? $customerPhone : null,
-            'fulfillment_type' => $fulfillmentType,
-            'delivery_address' => $deliveryAddress,
-            'order_number' => 'ORD-' . strtoupper(Str::random(8)),
-            'status' => 'pending',
-            'notes' => $data['notes'] ?? null,
-            'delivery_date' => $data['delivery_date'] ?? null,
-            'delivery_fee' => $deliveryFee,
-            'payment_method' => 'Cash on Delivery',
-        ]);
-
-        // Create order items from cart
-        $itemsTotal = 0;
-        foreach ($data['items'] as $item) {
-            $product = \App\Models\Product::find($item['product_id']);
-
-            $size = $item['customization']['size'] ?? null;
-            $unitPrice = CakePricing::priceForSize((float) $product->price, $size);
-
-            $orderItem = OrderItem::create([
-                'order_id' => $order->id,
-                'product_id' => $product->id,
-                'product_name_snapshot' => $product->name,
-                'product_price_snapshot' => $unitPrice,
-                'quantity' => $item['quantity'],
+        // Create order within a DB transaction to prevent orphan orders
+        $order = DB::transaction(function () use ($user, $data, $customerName, $customerPhone, $fulfillmentType, $deliveryAddress, $deliveryFee) {
+            $order = Order::create([
+                'user_id' => $user->id,
+                'customer_name' => $customerName,
+                'customer_phone' => $customerPhone !== '' ? $customerPhone : null,
+                'fulfillment_type' => $fulfillmentType,
+                'delivery_address' => $deliveryAddress,
+                'order_number' => 'ORD-' . strtoupper(Str::random(8)),
+                'status' => 'pending',
+                'notes' => $data['notes'] ?? null,
+                'delivery_date' => $data['delivery_date'] ?? null,
+                'delivery_fee' => $deliveryFee,
+                'payment_method' => 'Cash on Delivery',
             ]);
 
-            $itemsTotal += $unitPrice * $item['quantity'];
+            // Create order items from cart
+            $itemsTotal = 0;
+            foreach ($data['items'] as $item) {
+                $product = \App\Models\Product::findOrFail($item['product_id']);
 
-            $customization = isset($item['customization'])
-                ? array_filter($item['customization'], fn ($v) => $v !== null && $v !== '')
-                : [];
+                $size = $item['customization']['size'] ?? null;
+                $unitPrice = CakePricing::priceForSize((float) $product->price, $size);
 
-            if ($customization !== []) {
-                $orderItem->customization()->create($customization);
+                $orderItem = OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $product->id,
+                    'product_name_snapshot' => $product->name,
+                    'product_price_snapshot' => $unitPrice,
+                    'quantity' => $item['quantity'],
+                ]);
+
+                $itemsTotal += $unitPrice * $item['quantity'];
+
+                $customization = isset($item['customization'])
+                    ? array_filter($item['customization'], fn ($v) => $v !== null && $v !== '')
+                    : [];
+
+                if ($customization !== []) {
+                    $orderItem->customization()->create($customization);
+                }
             }
-        }
 
-        $order->total_amount = $itemsTotal + $deliveryFee;
-        $order->save();
+            $order->total_amount = $itemsTotal + $deliveryFee;
+            $order->save();
+
+            return $order;
+        });
 
         // Notify admins
         $adminUsers = User::where('role', 'admin')->get();
