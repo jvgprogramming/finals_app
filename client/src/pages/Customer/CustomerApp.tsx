@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoginForm from '../Auth/components/LoginForm';
+import CartService from '../../services/CartService';
 import ProductService from '../../services/ProductService';
 import OrderService from '../../services/OrderService';
 import NotificationService from '../../services/NotificationService';
@@ -67,10 +68,7 @@ export default function CustomerApp() {
   // Data Persistence states
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem('np_cart');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [cart, setCart] = useState([]);
   const [notifications, setNotifications] = useState([]);
 
   // UI Interactive States
@@ -115,10 +113,14 @@ export default function CustomerApp() {
     await handleLogout();
   };
 
-  // Save cart to LocalStorage only (keep cart temporary in browser)
+  // Load cart on mount (from server if authenticated, otherwise from localStorage)
   useEffect(() => {
-    localStorage.setItem('np_cart', JSON.stringify(cart));
-  }, [cart]);
+    const loadCart = async () => {
+      const items = await CartService.getCart();
+      setCart(items);
+    };
+    loadCart();
+  }, [isAuthenticated]);
 
   // Handle toast timers
   useEffect(() => {
@@ -244,8 +246,7 @@ export default function CustomerApp() {
   // ==========================================================================
 
   // Add item to cart
-  const handleAddToCart = (product, options) => {
-    const cartItemId = Date.now().toString();
+  const handleAddToCart = async (product, options) => {
     const categoryName =
       product.categoryLabel || product.category?.name || '';
     const unitPrice = getPriceForSize(
@@ -253,40 +254,31 @@ export default function CustomerApp() {
       options.size,
       categoryName,
     );
-    const newCartItem = {
-      cartItemId,
-      id: product.id,
+
+    const updatedCart = await CartService.addItem({
+      product_id: product.id,
       name: product.name,
-      price: unitPrice,
       image: product.image || product.image_url || '/images/placeholder.png',
       quantity: options.quantity,
       size: options.size,
       dedication: options.dedication,
-    };
+      price: unitPrice,
+    });
 
-    setCart((prev) => [...prev, newCartItem]);
+    setCart(updatedCart);
     setSelectedProduct(null);
     playSuccessSound();
-
-    // Customer UI Alert (will work after addToast is defined)
-    // addToast(`Added ${newCartItem.name} to cart!`, 'info');
   };
 
   // Adjust cart items
-  const handleUpdateCartQty = (cartItemId, newQty) => {
-    if (newQty <= 0) {
-      setCart((prev) => prev.filter((item) => item.cartItemId !== cartItemId));
-    } else {
-      setCart((prev) =>
-        prev.map((item) =>
-          item.cartItemId === cartItemId ? { ...item, quantity: newQty } : item,
-        ),
-      );
-    }
+  const handleUpdateCartQty = async (itemId, newQty) => {
+    const updatedCart = await CartService.updateQuantity(itemId, newQty);
+    setCart(updatedCart);
   };
 
-  const handleRemoveCartItem = (cartItemId) => {
-    setCart((prev) => prev.filter((item) => item.cartItemId !== cartItemId));
+  const handleRemoveCartItem = async (itemId) => {
+    const updatedCart = await CartService.removeItem(itemId);
+    setCart(updatedCart);
   };
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -329,6 +321,7 @@ export default function CustomerApp() {
 
       setOrders((prev) => [mapped, ...prev]);
       knownOrderIdsRef.current.add(mapped.id);
+      await CartService.clearCart();
       setCart([]);
       setIsCheckoutOpen(false);
       setIsCartOpen(false);

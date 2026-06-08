@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\api\AuthController;
+use App\Http\Controllers\api\CartController;
 use App\Http\Controllers\api\CategoryController;
 use App\Http\Controllers\api\NotificationController;
 use App\Http\Controllers\api\OrderController;
@@ -53,6 +54,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         Route::patch('/{order}/mark-preparing', 'markPreparing');
         Route::patch('/{order}/mark-ready', 'markReady');
         Route::patch('/{order}/complete', 'complete');
+    });
+
+    // Cart routes (rate limited: 60 per minute)
+    Route::controller(CartController::class)->prefix('/cart')->middleware('throttle:api')->group(function () {
+        Route::get('/', 'index');
+        Route::post('/add', 'add');
+        Route::post('/update/{cartItem}', 'updateQuantity');
+        Route::delete('/remove/{cartItem}', 'remove');
+        Route::delete('/clear', 'clear');
+        Route::post('/sync', 'sync');
     });
 
     // Notification routes (rate limited: 60 per minute)

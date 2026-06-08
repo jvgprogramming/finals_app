@@ -18,6 +18,7 @@ use Laravel\Sanctum\HasApiTokens;
 /**
  * @property-read Collection<int, Order> $orders
  * @property-read Collection<int, Notification> $notifications
+ * @property-read Collection<int, CartItem> $cartItems
  */
 class User extends Authenticatable
 {
@@ -44,6 +45,14 @@ class User extends Authenticatable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Get all cart items belonging to this user.
+     */
+    public function cartItems(): HasMany
+    {
+        return $this->hasMany(CartItem::class);
     }
 
     /**

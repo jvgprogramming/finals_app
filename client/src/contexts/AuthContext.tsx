@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import AuthService from '../services/AuthService';
+import CartService from '../services/CartService';
 
 interface User {
   id: number;
@@ -93,13 +94,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (username: string, password: string) => {
     const res = await AuthService.login({ username, password });
     const { token: newToken, user: newUser } = res.data;
-    return applySession(newToken, newUser);
+    const normalizedUser = applySession(newToken, newUser);
+
+    // Merge any guest cart items into the user's server-side cart
+    try {
+      await CartService.syncGuestCart();
+    } catch {
+      // Non-critical: cart sync failure shouldn't block login
+    }
+
+    return normalizedUser;
   };
 
   const register = async (payload: RegisterPayload) => {
     const res = await AuthService.register(payload);
     const { token: newToken, user: newUser } = res.data;
-    return applySession(newToken, newUser);
+    const normalizedUser = applySession(newToken, newUser);
+
+    // Merge any guest cart items into the user's server-side cart
+    try {
+      await CartService.syncGuestCart();
+    } catch {
+      // Non-critical: cart sync failure shouldn't block registration
+    }
+
+    return normalizedUser;
   };
 
   const logout = async () => {
@@ -109,6 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // ignore network errors during logout
     } finally {
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('np_cart');
       setToken(null);
       setUser(null);
     }
