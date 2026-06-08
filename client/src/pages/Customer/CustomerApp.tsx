@@ -27,6 +27,11 @@ import {
   isPastryOrBreadCategory,
 } from '../../utils/productPricing';
 import {
+  formatPhoneInput,
+  isValidPhilippinePhone,
+  normalizePhone,
+} from '../../utils/phoneFormat';
+import {
   BellIcon,
   ShoppingCartIcon,
   MagnifyingGlassIcon,
@@ -77,6 +82,7 @@ export default function CustomerApp() {
 
   // Search & Catalog Filter states
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState('popular'); // 'popular', 'price-asc', 'price-desc'
 
@@ -311,7 +317,7 @@ export default function CustomerApp() {
           ? formatDeliveryDateForApi(checkoutForm.date, checkoutForm.time)
           : null,
         customer_name: checkoutForm.name.trim(),
-        customer_phone: checkoutForm.phone.trim(),
+        customer_phone: normalizePhone(checkoutForm.phone),
         fulfillment_type: checkoutForm.type,
         delivery_address:
           checkoutForm.type === 'delivery' ? checkoutForm.address.trim() : null,
@@ -397,13 +403,21 @@ export default function CustomerApp() {
     return Array.from(categorySet);
   }, [products]);
 
+  // Debounce search input by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   // Customer Filtering logic
   const filteredProducts = useMemo(() => {
     return products
       .filter((product) => {
         const matchSearch =
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.toLowerCase());
+          product.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          product.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
         const categoryName =
           product.categoryLabel ??
           (typeof product.category === 'string'
@@ -418,7 +432,7 @@ export default function CustomerApp() {
         if (sortBy === 'price-desc') return b.price - a.price;
         return b.id - a.id; // popularity mock default
       });
-  }, [products, searchQuery, activeCategory, sortBy]);
+  }, [products, debouncedSearchQuery, activeCategory, sortBy]);
 
   const unreadNotifCount = useMemo(
     () => notifications.filter((n) => !n.is_read).length,
@@ -1455,12 +1469,48 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
     }
   };
 
+  const [phoneError, setPhoneError] = useState('');
+  const [phoneTouched, setPhoneTouched] = useState(false);
+
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneInput(e.target.value);
+    setForm((prev) => ({ ...prev, phone: formatted }));
+    // Only validate on change if the field has been touched (blurred once)
+    if (phoneTouched) {
+      validatePhone(formatted);
+    }
+  };
+
+  const handlePhoneBlur = () => {
+    setPhoneTouched(true);
+    validatePhone(form.phone);
+  };
+
+  const validatePhone = (phone) => {
+    if (phone && phone.length > 4) {
+      setPhoneError(
+        isValidPhilippinePhone(phone) ? '' : 'Please enter a valid Philippine mobile number (e.g., 09171234567).',
+      );
+    } else if (phone && phone.length > 0) {
+      setPhoneError('Please enter a valid Philippine mobile number (e.g., 09171234567).');
+    } else {
+      setPhoneError('');
+    }
+  };
+
   const handleSubmitForm = (e) => {
     e.preventDefault();
     if (!form.name || !form.phone || !form.date) {
       alert(
         'Please complete the required name, phone and scheduled delivery date.',
       );
+      return;
+    }
+    setPhoneTouched(true);
+    // Clear phone error first, then re-validate
+    const normalizedPhone = normalizePhone(form.phone);
+    if (!isValidPhilippinePhone(normalizedPhone)) {
+      setPhoneError('Please enter a valid Philippine mobile number (e.g., 09171234567).');
       return;
     }
     if (form.type === 'delivery' && !form.address) {
@@ -1509,7 +1559,6 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
                     type="text"
                     className="form-control"
                     placeholder="Joshua Doe"
-                    required
                     value={form.name}
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, name: e.target.value }))
@@ -1522,13 +1571,16 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
                   <input
                     type="tel"
                     className="form-control"
-                    placeholder="0917XXXXXXX"
-                    required
+                    placeholder="+63 917 XXX XXXX"
                     value={form.phone}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, phone: e.target.value }))
-                    }
+                    onChange={handlePhoneChange}
+                    onBlur={handlePhoneBlur}
                   />
+                  {phoneError && (
+                    <span style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                      {phoneError}
+                    </span>
+                  )}
                 </div>
 
                 <h4
@@ -1566,7 +1618,6 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
                       type="text"
                       className="form-control"
                       placeholder="Street, Barangay, City, Landmark Details"
-                      required={form.type === 'delivery'}
                       value={form.address}
                       onChange={(e) =>
                         setForm((prev) => ({
@@ -1585,7 +1636,6 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
                       type="date"
                       className="form-control"
                       min={todayStr}
-                      required
                       value={form.date}
                       onChange={(e) =>
                         setForm((prev) => ({ ...prev, date: e.target.value }))

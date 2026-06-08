@@ -22,7 +22,7 @@ class ProductResource extends JsonResource
             'price' => (float) $this->price,
             'is_available' => $this->is_available,
             'image_url' => $this->image_path
-                ? url(Storage::url('products/' . $this->image_path))
+                ? url(Storage::url('products/'.$this->image_path))
                 : null,
             'category' => new CategoryResource($this->whenLoaded('category')),
             'category_id' => $this->category_id,

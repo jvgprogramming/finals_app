@@ -14,7 +14,7 @@ class AuthService
     {
         $user = User::where('username', $username)->first();
 
-        if (!$user || !Hash::check($password, $user->password)) {
+        if (! $user || ! Hash::check($password, $user->password)) {
             return null;
         }
 

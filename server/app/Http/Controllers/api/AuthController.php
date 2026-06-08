@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Resources\UserResource;
+use App\Models\User;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 
 class AuthController extends Controller
 {
@@ -20,24 +21,31 @@ class AuthController extends Controller
      */
     public function login(LoginRequest $request): JsonResponse
     {
-        $result = $this->authService->login(
-            $request->validated('username'),
-            $request->validated('password')
-        );
+        try {
+            $result = $this->authService->login(
+                $request->validated('username'),
+                $request->validated('password')
+            );
 
-        if (!$result) {
+            if (! $result) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid username or password',
+                ], 401);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Login successful',
+                'token' => $result['token'],
+                'user' => new UserResource($result['user']),
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid username or password',
             ], 401);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Login successful',
-            'token' => $result['token'],
-            'user' => new UserResource($result['user']),
-        ], 200);
     }
 
     /**
@@ -53,7 +61,7 @@ class AuthController extends Controller
         ]);
 
         try {
-            $user = \App\Models\User::create([
+            $user = User::create([
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
                 'username' => $validated['username'],
@@ -72,7 +80,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Registration failed: ' . $e->getMessage(),
+                'message' => 'Registration failed. Please try again.',
             ], 400);
         }
     }
@@ -82,12 +90,19 @@ class AuthController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $this->authService->logout($request->user());
+        try {
+            $this->authService->logout($request->user());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Logged out successfully',
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Logged out successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Logout failed.',
+            ], 500);
+        }
     }
 
     /**
@@ -95,11 +110,17 @@ class AuthController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'User retrieved successfully',
-            'user' => new UserResource($this->authService->me($request->user())),
-        ], 200);
+        try {
+            return response()->json([
+                'success' => true,
+                'message' => 'User retrieved successfully',
+                'user' => new UserResource($this->authService->me($request->user())),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to retrieve user.',
+            ], 500);
+        }
     }
 }
-

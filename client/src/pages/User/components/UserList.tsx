@@ -19,7 +19,7 @@ interface UserListProps {
 }
 
 const UserList: FC<UserListProps> = ({ onAddUser, onEditUser, onDeleteUser, refreshKey }) => {
-const [loadingUsers, setLoadingUsers] = useState(false)
+const [loadingUsers, setLoadingUsers] = useState(true)
 const [users, setUsers] = useState<UserColumns[]>([])
 const [usersTableCurrentPage, setUsersTableCurrentPage] = useState(1)
 const [usersTableLastPage, setUsersTableLastPage] = useState(1)

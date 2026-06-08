@@ -15,5 +15,29 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Ensure API routes always return JSON, even on error
+        $exceptions->shouldRenderJsonWhen(function (\Illuminate\Http\Request $request) {
+            return $request->is('api/*') || $request->expectsJson();
+        });
+
+        // Safety net: sanitize unexpected exceptions (DB errors, etc.) for API routes
+        // while letting HTTP exceptions (404, 403, 422, 401) render normally
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if (!($request->is('api/*') || $request->expectsJson())) {
+                return;
+            }
+
+            // Let HTTP exceptions and auth errors pass through with proper
+            // status codes and messages that the front-end depends on
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface ||
+                $e instanceof \Illuminate\Auth\AuthenticationException) {
+                return;
+            }
+
+            // Sanitize unexpected exceptions (database errors, etc.)
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred.',
+            ], 500);
+        });
     })->create();

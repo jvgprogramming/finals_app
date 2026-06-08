@@ -138,7 +138,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
                         name="first_name"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        required
                         autoFocus
                         errors={errors.first_name}
                         />
@@ -160,7 +159,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
                         name="last_name"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        required
                         errors={errors.last_name}
                         />
                     </div>
@@ -184,7 +182,6 @@ const EditUserFormModal: FC<EditUserFormModalProps> = ({ user, onUserUpdate, ref
                         name="username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        required
                         errors={errors.username}
                         />
                     </div>

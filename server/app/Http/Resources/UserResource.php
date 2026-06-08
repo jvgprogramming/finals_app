@@ -22,7 +22,7 @@ class UserResource extends JsonResource
             'suffix_name' => $this->suffix_name,
             'username' => $this->username,
             'role' => $this->role,
-            'profile_picture' => $this->profile_picture ? url('storage/profile_pictures/' . $this->profile_picture) : null,
+            'profile_picture' => $this->profile_picture ? url('storage/profile_pictures/'.$this->profile_picture) : null,
         ];
     }
 }

@@ -106,7 +106,6 @@ interface AddUserFormModalProps {
                   name="first_name"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  required
                   autoFocus
                   errors={errors.first_name}
                 />
@@ -128,7 +127,6 @@ interface AddUserFormModalProps {
                   name="last_name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  required
                   errors={errors.last_name}
                 />
               </div>
@@ -152,7 +150,6 @@ interface AddUserFormModalProps {
                   name="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  required
                   errors={errors.username}
                 />
               </div>
@@ -163,7 +160,6 @@ interface AddUserFormModalProps {
                   name="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  required
                   errors={errors.password}
                 />
               </div>
@@ -174,7 +170,6 @@ interface AddUserFormModalProps {
                   name="password_confirmation"
                   value={passwordConfirmation}
                   onChange={(e) => setPasswordConfirmation(e.target.value)}
-                  required
                   errors={errors.password_confirmation}
                 />
               </div>

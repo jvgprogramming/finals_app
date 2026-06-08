@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 class NotificationController extends Controller
 {
     use AuthorizesRequests;
+
     /**
      * Get user's notifications (paginated).
      */

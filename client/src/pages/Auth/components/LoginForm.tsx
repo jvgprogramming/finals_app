@@ -129,7 +129,6 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
                 className="form-control"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                required
               />
             </div>
             <div className="form-group">
@@ -139,7 +138,6 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
                 className="form-control"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                required
               />
             </div>
           </div>
@@ -163,7 +161,6 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
             autoComplete="username"
             minLength={6}
             maxLength={12}
-            required
           />
         </div>
       </div>
@@ -185,7 +182,6 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
             autoComplete={isRegister ? 'new-password' : 'current-password'}
             minLength={6}
             maxLength={12}
-            required
             style={{ paddingRight: '44px' }}
           />
           <button
@@ -215,7 +211,7 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
             autoComplete="new-password"
             minLength={6}
             maxLength={12}
-            required={isRegister}
+
           />
         </div>
       )}

@@ -4,10 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import ProductService from '../../services/ProductService';
 import { resolveProductImageUrl } from '../../utils/imageUrl';
 import { formatPeso } from '../../utils/currency';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import './catalog.css';
 
 const CatalogPage: React.FC = () => {
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState(['All']);
@@ -41,10 +43,18 @@ const CatalogPage: React.FC = () => {
     fetchData();
   }, []);
 
+  // Debounce search input by 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
   const filtered = products.filter((p: any) => {
     const matchesQuery =
-      p.name.toLowerCase().includes(query.toLowerCase()) ||
-      p.description.toLowerCase().includes(query.toLowerCase());
+      p.name.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      p.description.toLowerCase().includes(debouncedQuery.toLowerCase());
     const matchesCat = category === 'All' || p.category?.name === category;
     return matchesQuery && matchesCat;
   });
@@ -90,9 +100,7 @@ const CatalogPage: React.FC = () => {
 
       <section className="product-grid">
         {loading && (
-          <div className="loading-state">
-            <p>Loading products...</p>
-          </div>
+          <LoadingSpinner label="Loading products…" />
         )}
         {error && (
           <div className="error-state">

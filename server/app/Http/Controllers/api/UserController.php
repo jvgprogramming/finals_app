@@ -22,20 +22,27 @@ class UserController extends Controller
      */
     public function loadUsers(Request $request): JsonResponse
     {
-        $page = $request->query('page', 1);
-        $search = $request->query('search', null);
+        try {
+            $page = $request->query('page', 1);
+            $search = $request->query('search', null);
 
-        $users = $this->userService->getUsers($page, $search);
+            $users = $this->userService->getUsers($page, $search);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Users retrieved successfully',
-            'users' => [
-                'data' => UserResource::collection($users['data']),
-                'current_page' => $users['current_page'],
-                'last_page' => $users['last_page'],
-            ],
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'Users retrieved successfully',
+                'users' => [
+                    'data' => UserResource::collection($users['data']),
+                    'current_page' => $users['current_page'],
+                    'last_page' => $users['last_page'],
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load users.',
+            ], 500);
+        }
     }
 
     /**
@@ -43,15 +50,28 @@ class UserController extends Controller
      */
     public function storeUser(StoreUserRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        try {
+            $validated = $request->validated();
 
-        $user = $this->userService->storeUser($validated);
+            // Map front-end field name to the field UserService expects
+            if (isset($validated['add_user_profile_picture'])) {
+                $validated['profile_picture'] = $validated['add_user_profile_picture'];
+                unset($validated['add_user_profile_picture']);
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User successfully created',
-            'user' => new UserResource($user),
-        ], 201);
+            $user = $this->userService->storeUser($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User successfully created',
+                'user' => new UserResource($user),
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create user.',
+            ], 500);
+        }
     }
 
     /**
@@ -59,15 +79,28 @@ class UserController extends Controller
      */
     public function updateUser(UpdateUserRequest $request, User $user): JsonResponse
     {
-        $validated = $request->validated();
+        try {
+            $validated = $request->validated();
 
-        $updatedUser = $this->userService->updateUser($user, $validated);
+            // Map front-end field name to the field UserService expects
+            if (isset($validated['edit_user_profile_picture'])) {
+                $validated['profile_picture'] = $validated['edit_user_profile_picture'];
+                unset($validated['edit_user_profile_picture']);
+            }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User successfully updated',
-            'user' => new UserResource($updatedUser),
-        ], 200);
+            $updatedUser = $this->userService->updateUser($user, $validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User successfully updated',
+                'user' => new UserResource($updatedUser),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update user.',
+            ], 500);
+        }
     }
 
     /**
@@ -75,11 +108,18 @@ class UserController extends Controller
      */
     public function destroyUser(User $user): JsonResponse
     {
-        $this->userService->deleteUser($user);
+        try {
+            $this->userService->deleteUser($user);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User successfully deleted',
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'message' => 'User successfully deleted',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete user.',
+            ], 500);
+        }
     }
 }

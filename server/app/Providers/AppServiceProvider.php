@@ -10,6 +10,10 @@ use App\Repositories\UserRepository;
 use App\Repositories\UserRepositoryInterface;
 use App\Services\AuthService;
 use App\Services\UserService;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Register service bindings
         $this->app->singleton(AuthService::class, function ($app) {
-            return new AuthService();
+            return new AuthService;
         });
 
         $this->app->singleton(UserService::class, function ($app) {
@@ -38,7 +42,20 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Register policies
-        \Illuminate\Support\Facades\Gate::policy(Order::class, OrderPolicy::class);
-        \Illuminate\Support\Facades\Gate::policy(Notification::class, NotificationPolicy::class);
+        Gate::policy(Order::class, OrderPolicy::class);
+        Gate::policy(Notification::class, NotificationPolicy::class);
+
+        // Configure rate limiters
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
+        RateLimiter::for('auth', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
+        RateLimiter::for('orders', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

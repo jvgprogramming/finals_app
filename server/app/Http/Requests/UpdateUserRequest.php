@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class UpdateUserRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
@@ -38,7 +39,7 @@ class UpdateUserRequest extends FormRequest
             ],
             'password' => 'nullable|string|min:6|max:12|confirmed',
             'password_confirmation' => 'nullable|string|min:6|max:12',
-            'profile_picture' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
+            'edit_user_profile_picture' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
         ];
     }
 }

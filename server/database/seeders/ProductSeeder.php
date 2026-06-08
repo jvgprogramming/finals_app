@@ -14,7 +14,7 @@ class ProductSeeder extends Seeder
         $pastries = Category::where('name', 'Pastries')->first();
         $breads = Category::where('name', 'Breads')->first();
 
-        if (!$cakes || !$pastries || !$breads) {
+        if (! $cakes || ! $pastries || ! $breads) {
             return;
         }
 

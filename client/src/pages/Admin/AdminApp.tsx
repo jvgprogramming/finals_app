@@ -1528,7 +1528,6 @@ export default function AdminApp() {
                                     name: e.target.value,
                                   }))
                                 }
-                                required
                               />
                             </div>
 
@@ -1547,7 +1546,6 @@ export default function AdminApp() {
                                       price: e.target.value,
                                     }))
                                   }
-                                  required
                                 />
                               </div>
                               <div className="form-group">
@@ -1561,7 +1559,6 @@ export default function AdminApp() {
                                       category_id: e.target.value,
                                     }))
                                   }
-                                  required
                                 >
                                   <option value="">Select a category</option>
                                   {categories.map((cat) => (

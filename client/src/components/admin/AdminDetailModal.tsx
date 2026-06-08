@@ -163,7 +163,6 @@ export default function AdminDetailModal({
                   </label>
                   <textarea
                     className="dedication-textarea"
-                    required
                     placeholder="Reason for declining this order"
                     value={remarks}
                     onChange={(e) => setRemarks(e.target.value)}

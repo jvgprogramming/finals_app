@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreUserRequest extends FormRequest
@@ -17,7 +18,7 @@ class StoreUserRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
     {
@@ -29,7 +30,7 @@ class StoreUserRequest extends FormRequest
             'username' => 'required|string|min:6|max:12|unique:users,username',
             'password' => 'required|string|min:6|max:12|confirmed',
             'password_confirmation' => 'required|string|min:6|max:12',
-            'profile_picture' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
+            'add_user_profile_picture' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
         ];
     }
 }

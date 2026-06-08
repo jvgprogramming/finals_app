@@ -1,17 +1,18 @@
 <?php
 
 use App\Http\Controllers\api\AuthController;
-use App\Http\Controllers\api\UserController;
 use App\Http\Controllers\api\CategoryController;
-use App\Http\Controllers\api\ProductController;
-use App\Http\Controllers\api\OrderController;
 use App\Http\Controllers\api\NotificationController;
+use App\Http\Controllers\api\OrderController;
+use App\Http\Controllers\api\ProductController;
+use App\Http\Controllers\api\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Public auth routes
 Route::controller(AuthController::class)->prefix('/auth')->group(function () {
-    Route::post('/login', 'login');
-    Route::post('/register', 'register');
+    // Login and register are rate limited: 5 attempts per minute (brute force protection)
+    Route::post('/login', 'login')->middleware('throttle:auth');
+    Route::post('/register', 'register')->middleware('throttle:auth');
     Route::post('/logout', 'logout')->middleware('auth:sanctum');
     Route::get('/me', 'me')->middleware('auth:sanctum');
 });
@@ -26,8 +27,8 @@ Route::controller(ProductController::class)->prefix('/products')->group(function
     Route::get('/{product}', 'show');
 });
 
-// Protected user routes
-Route::middleware('auth:sanctum')->group(function () {
+// Protected user routes (rate limited: 60 per minute)
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::controller(UserController::class)->prefix('/user')->group(function () {
         Route::get('/loadUsers', 'loadUsers');
         Route::post('/storeUser', 'storeUser');
@@ -42,8 +43,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/{product}', 'destroy');
     });
 
-    // Order routes
-    Route::controller(OrderController::class)->prefix('/orders')->group(function () {
+    // Order routes (rate limited: 10 per minute)
+    Route::controller(OrderController::class)->prefix('/orders')->middleware('throttle:orders')->group(function () {
         Route::get('/', 'index');
         Route::get('/{order}', 'show');
         Route::post('/', 'store');
@@ -54,12 +55,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/{order}/complete', 'complete');
     });
 
-    // Notification routes
-    Route::controller(NotificationController::class)->prefix('/notifications')->group(function () {
+    // Notification routes (rate limited: 60 per minute)
+    Route::controller(NotificationController::class)->prefix('/notifications')->middleware('throttle:api')->group(function () {
         Route::get('/', 'index');
         Route::patch('/{notification}/read', 'markRead');
         Route::patch('/mark-all-read', 'markAllRead');
     });
 });
-
-
