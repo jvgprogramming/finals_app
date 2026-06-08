@@ -653,7 +653,7 @@ export default function AdminApp() {
       price: product.price,
       description: product.description,
       category_id: product.category?.id || '',
-      is_available: product.is_available ?? true,
+      is_available: Boolean(product.is_available ?? product.available),
       image: product.image || product.image_url || null,
     });
     productImageFileRef.current = null;
@@ -1403,14 +1403,16 @@ export default function AdminApp() {
                                       : 'var(--danger)',
                                   }}
                                 >
-                                  {product.is_available
+                                  {product.is_available ?? product.available
                                     ? 'Available'
                                     : 'Not Available'}
                                 </span>
                                 <label className="switch">
                                   <input
                                     type="checkbox"
-                                    checked={product.is_available}
+                                    checked={Boolean(
+                                      product.is_available ?? product.available,
+                                    )}
                                     disabled={togglingProductId === product.id}
                                     onChange={() =>
                                       handleToggleProductAvailability(

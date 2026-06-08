@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoginForm from '../Auth/components/LoginForm';
-import CartService from '../../services/CartService';
+import CartService, { getCartLineId } from '../../services/CartService';
 import ProductService from '../../services/ProductService';
 import OrderService from '../../services/OrderService';
 import NotificationService from '../../services/NotificationService';
@@ -292,7 +292,7 @@ export default function CustomerApp() {
         if (item.dedication) customization.dedication_message = item.dedication;
         if (item.size) customization.size = item.size;
         return {
-          product_id: item.id,
+          product_id: item.product_id,
           quantity: item.quantity,
           ...(Object.keys(customization).length > 0 ? { customization } : {}),
         };
@@ -1289,7 +1289,7 @@ function CartDrawer({
             </div>
           ) : (
             cart.map((item) => (
-              <div key={item.cartItemId} className="cart-item">
+              <div key={String(getCartLineId(item))} className="cart-item">
                 <img
                   src={item.image}
                   alt={item.name}
@@ -1313,7 +1313,7 @@ function CartDrawer({
                 <div className="cart-item-actions">
                   <button
                     className="btn-remove"
-                    onClick={() => onRemove(item.cartItemId)}
+                    onClick={() => onRemove(getCartLineId(item))}
                   >
                     Remove
                   </button>
@@ -1329,7 +1329,7 @@ function CartDrawer({
                       type="button"
                       className="qty-btn"
                       onClick={() =>
-                        onUpdateQty(item.cartItemId, item.quantity - 1)
+                        onUpdateQty(getCartLineId(item), item.quantity - 1)
                       }
                       aria-label="Decrease quantity"
                     >
@@ -1340,7 +1340,7 @@ function CartDrawer({
                       type="button"
                       className="qty-btn"
                       onClick={() =>
-                        onUpdateQty(item.cartItemId, item.quantity + 1)
+                        onUpdateQty(getCartLineId(item), item.quantity + 1)
                       }
                       aria-label="Increase quantity"
                     >
@@ -1464,6 +1464,7 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
 
   const [phoneError, setPhoneError] = useState('');
   const [phoneTouched, setPhoneTouched] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const handlePhoneChange = (e) => {
     const formatted = formatPhoneInput(e.target.value);
@@ -1493,26 +1494,26 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
 
   const handleSubmitForm = (e) => {
     e.preventDefault();
-    if (!form.name || !form.phone || !form.date) {
-      alert(
-        'Please complete the required name, phone and scheduled delivery date.',
+    setFormError('');
+
+    if (!form.name?.trim() || !form.phone?.trim() || !form.date) {
+      setFormError(
+        'Please complete your name, phone number, and scheduled delivery date.',
       );
       return;
     }
     setPhoneTouched(true);
-    // Clear phone error first, then re-validate
     const normalizedPhone = normalizePhone(form.phone);
     if (!isValidPhilippinePhone(normalizedPhone)) {
       setPhoneError('Please enter a valid Philippine mobile number (e.g., 09171234567).');
       return;
     }
-    if (form.type === 'delivery' && !form.address) {
-      alert('Please specify a home address for delivery.');
+    if (form.type === 'delivery' && !form.address?.trim()) {
+      setFormError('Please specify a delivery address.');
       return;
     }
-    // Payment is restricted to Cash on Delivery (no receipt required)
 
-    onSubmit(form);
+    onSubmit({ ...form, phone: normalizedPhone });
   };
 
   return (
@@ -1539,6 +1540,22 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
           </h3>
 
           <form onSubmit={handleSubmitForm}>
+            {formError && (
+              <div
+                role="alert"
+                style={{
+                  marginBottom: '16px',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  background: 'rgba(212, 80, 80, 0.1)',
+                  border: '1px solid var(--danger)',
+                  color: 'var(--danger)',
+                  fontSize: '14px',
+                }}
+              >
+                {formError}
+              </div>
+            )}
             <div className="checkout-grid">
               {/* Form Input fields */}
               <div>
@@ -1693,7 +1710,10 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
 
                   <div className="summary-items-list">
                     {cart.map((item) => (
-                      <div key={item.cartItemId} className="summary-item-row">
+                      <div
+                        key={String(getCartLineId(item))}
+                        className="summary-item-row"
+                      >
                         <div>
                           <span className="summary-item-name">{item.name}</span>
                           <span

@@ -4,8 +4,9 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 const CART_STORAGE_KEY = 'np_cart';
 
 export interface CartItem {
-  /** Server-side ID (numeric) when authenticated; cartItemId (string) when guest */
+  /** Server-side cart row ID when authenticated */
   id?: number;
+  /** Guest cart line ID */
   cartItemId?: string;
   product_id: number;
   name: string;
@@ -14,6 +15,13 @@ export interface CartItem {
   size: string;
   dedication?: string;
   image: string;
+}
+
+/** Stable React key and update/remove target for guest or server cart lines */
+export function getCartLineId(item: CartItem): string | number {
+  if (item.id != null) return item.id;
+  if (item.cartItemId) return item.cartItemId;
+  return `line-${item.product_id}-${item.size}`;
 }
 
 interface AddToCartPayload {
@@ -57,11 +65,37 @@ class CartService {
     };
   }
 
+  /** Normalize legacy guest cart rows (missing ids / product_id) */
+  private normalizeCartItem(item: CartItem): CartItem {
+    const productId = Number(item.product_id ?? (item as { id?: number }).id);
+    const cartItemId =
+      item.cartItemId ??
+      (item.id != null ? `server_${item.id}` : this.generateCartItemId());
+
+    return {
+      ...item,
+      product_id: productId,
+      cartItemId: item.id == null ? cartItemId : item.cartItemId,
+      quantity: Math.max(1, Number(item.quantity) || 1),
+      size: item.size || 'Default',
+      image: item.image || '/images/placeholder.png',
+    };
+  }
+
+  private normalizeCart(items: CartItem[]): CartItem[] {
+    return items.map((item) => this.normalizeCartItem(item));
+  }
+
   /** Read guest cart from localStorage */
   private getLocalCart(): CartItem[] {
     try {
       const saved = localStorage.getItem(CART_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
+      const parsed: CartItem[] = saved ? JSON.parse(saved) : [];
+      const normalized = this.normalizeCart(parsed);
+      if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
+        this.setLocalCart(normalized);
+      }
+      return normalized;
     } catch {
       return [];
     }
@@ -111,7 +145,7 @@ class CartService {
       const response = await this.apiClient.get<{ success: boolean; data: ServerCartItem[] }>('/cart', {
         headers: this.authHeaders(),
       });
-      return response.data.data.map(this.mapServerItem);
+      return response.data.data.map((row) => this.mapServerItem(row));
     } catch (error) {
       console.error('Error fetching cart:', error);
       return [];
