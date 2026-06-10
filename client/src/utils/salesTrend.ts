@@ -6,6 +6,14 @@ export type SalesTrendPoint = {
   revenue: number;
 };
 
+/** Generate a YYYY-MM-DD string from a Date object using local timezone methods. */
+function toLocalDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export function buildSalesTrend(
   orders: UiOrder[],
   days = 7,
@@ -17,7 +25,7 @@ export function buildSalesTrend(
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    const dateKey = d.toISOString().slice(0, 10);
+    const dateKey = toLocalDateKey(d);
     points.push({
       label: d.toLocaleDateString('en-PH', { weekday: 'short' }),
       dateKey,
@@ -30,7 +38,7 @@ export function buildSalesTrend(
     .forEach((order) => {
       const source = order.created_at ?? order.delivery_date;
       if (!source) return;
-      const key = new Date(source).toISOString().slice(0, 10);
+      const key = toLocalDateKey(new Date(source));
       const bucket = points.find((p) => p.dateKey === key);
       if (bucket) {
         bucket.revenue += order.totalPrice;
