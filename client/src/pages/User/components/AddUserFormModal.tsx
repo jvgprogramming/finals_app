@@ -10,7 +10,7 @@ import type { UserFieldErrors } from '../../../interfaces/UserInterface';
 import UploadInput from '../../../components/input/UploadInput';
 
 interface AddUserFormModalProps {
-  onUserAdded: (message: string) => void
+  onUserAdded: (message: string, failed?: boolean) => void
   isOpen: boolean;
   onClose: () => void;
   refreshKey: () => void;
@@ -53,7 +53,7 @@ interface AddUserFormModalProps {
 
       const response = await UserService.storeUser(formData)
 
-      if(response.status === 200) {
+      if(response.status === 200 || response.status === 201) {
         setAddUserProfilePicture(null)
         setFirstName('')
         setMiddleName('')
@@ -74,8 +74,14 @@ interface AddUserFormModalProps {
     }catch(error:any) {
       if(error.response && error.response.status === 422) {
         setErrors(error.response.data.errors)
+        // Show the first validation error as a toast too
+        const allErrors = error.response.data.errors;
+        const firstErrorKey = Object.keys(allErrors)[0];
+        const firstError = firstErrorKey ? allErrors[firstErrorKey]?.[0] : '';
+        onUserAdded(firstError || 'Validation error', true)
       }else {
         console.log('Unexpected server error occured during adding user:', error)
+        onUserAdded('An unexpected error occurred', true)
       }
     }finally {
       setLoadingStore(false)

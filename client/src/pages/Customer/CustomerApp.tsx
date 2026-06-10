@@ -44,17 +44,11 @@ import {
   PhoneIcon,
   HomeIcon,
   PhotoIcon,
-  UserIcon,
-  CameraIcon,
   SparklesIcon,
   XMarkIcon,
   MinusIcon,
   PlusIcon,
-  CurrencyDollarIcon,
-  LightBulbIcon,
-  ChartBarIcon,
 } from '@heroicons/react/24/outline';
-
 
 export default function CustomerApp() {
   // ==========================================================================
@@ -140,7 +134,9 @@ export default function CustomerApp() {
         setIsCheckoutOpen(true);
         localStorage.removeItem('openCheckout');
       }
-    } catch (e) {}
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   // If a page requested login (pendingCheckout flag), open the login modal
@@ -150,7 +146,9 @@ export default function CustomerApp() {
       if (pending === '1') {
         setIsLoginOpen(true);
       }
-    } catch (e) {}
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   // Fetch products on mount
@@ -208,7 +206,8 @@ export default function CustomerApp() {
 
     const fetchNotifications = async () => {
       try {
-        const notificationsResult = await NotificationService.getNotifications();
+        const notificationsResult =
+          await NotificationService.getNotifications();
         setNotifications(notificationsResult.data || notificationsResult);
       } catch (err) {
         console.error('Error fetching notifications:', err);
@@ -226,7 +225,9 @@ export default function CustomerApp() {
     },
     onOrdersUpdate: (newOrders) => {
       const mapped = mapOrdersFromApi(newOrders);
-      const hasNewOrder = mapped.some((o) => !knownOrderIdsRef.current.has(o.id));
+      const hasNewOrder = mapped.some(
+        (o) => !knownOrderIdsRef.current.has(o.id),
+      );
       knownOrderIdsRef.current = new Set(mapped.map((o) => o.id));
       setOrders(mapped);
       if (pollingReadyRef.current && hasNewOrder) {
@@ -247,8 +248,7 @@ export default function CustomerApp() {
 
   // Add item to cart
   const handleAddToCart = async (product, options) => {
-    const categoryName =
-      product.categoryLabel || product.category?.name || '';
+    const categoryName = product.categoryLabel || product.category?.name || '';
     const unitPrice = getPriceForSize(
       product.price,
       options.size,
@@ -360,11 +360,6 @@ export default function CustomerApp() {
     }
   };
 
-  // Helper to add temporary bottom-right toast messages
-  const addToast = (text, type, data = null) => {
-    setToasts((prev) => [...prev, { id: Date.now(), text, type, data }]);
-  };
-
   // Clear unread notifications
   const handleMarkNotificationsRead = async () => {
     try {
@@ -376,7 +371,7 @@ export default function CustomerApp() {
     }
   };
 
-  const handleNotificationOrderSelect = (orderId) => {
+  const handleNotificationOrderSelect = () => {
     setActiveView('customer-orders');
     setIsNotifPanelOpen(false);
   };
@@ -388,7 +383,7 @@ export default function CustomerApp() {
   // Build available categories from API products
   const availableCategories = useMemo(() => {
     const categorySet = new Set(['All']);
-    products.forEach((p: any) => {
+    products.forEach((p: Record<string, unknown>) => {
       const name =
         typeof p.category === 'string' ? p.category : p.category?.name;
       if (name) categorySet.add(name);
@@ -409,8 +404,12 @@ export default function CustomerApp() {
     return products
       .filter((product) => {
         const matchSearch =
-          product.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+          product.name
+            .toLowerCase()
+            .includes(debouncedSearchQuery.toLowerCase()) ||
+          product.description
+            .toLowerCase()
+            .includes(debouncedSearchQuery.toLowerCase());
         const categoryName =
           product.categoryLabel ??
           (typeof product.category === 'string'
@@ -438,7 +437,7 @@ export default function CustomerApp() {
       <div className="toast-container">
         {toasts.map((toast) => (
           <div key={toast.id} className="alert-toast">
-              <div className="alert-toast-content">
+            <div className="alert-toast-content">
               <BellIcon style={{ width: 20, height: 20 }} aria-hidden />
               <div>
                 <strong>Notification</strong>
@@ -527,7 +526,10 @@ export default function CustomerApp() {
                   className="btn-icon"
                   onClick={() => setIsCartOpen(true)}
                 >
-                  <ShoppingCartIcon style={{ width: 20, height: 20 }} aria-hidden />
+                  <ShoppingCartIcon
+                    style={{ width: 20, height: 20 }}
+                    aria-hidden
+                  />
                   {cart.length > 0 && (
                     <span className="badge">
                       {cart.reduce((sum, item) => sum + item.quantity, 0)}
@@ -581,7 +583,10 @@ export default function CustomerApp() {
                     {/* Search and Filters Bar */}
                     <div className="search-filter-bar">
                       <div className="search-input-wrapper">
-                        <MagnifyingGlassIcon style={{ width: 18, height: 18 }} aria-hidden />
+                        <MagnifyingGlassIcon
+                          style={{ width: 18, height: 18 }}
+                          aria-hidden
+                        />
                         <input
                           type="text"
                           placeholder="Search for cakes, pastries, breads..."
@@ -668,12 +673,16 @@ export default function CustomerApp() {
                           >
                             {!product.is_available && (
                               <div className="sold-out-overlay">
-                                <span className="sold-out-badge">Not Available</span>
+                                <span className="sold-out-badge">
+                                  Not Available
+                                </span>
                               </div>
                             )}
                             <div className="card-img-wrapper">
                               <span className="card-badge">
-                                {product.categoryLabel || product.category?.name || 'Pastry'}
+                                {product.categoryLabel ||
+                                  product.category?.name ||
+                                  'Pastry'}
                               </span>
                               <img
                                 src={product.image || '/images/placeholder.png'}
@@ -687,7 +696,13 @@ export default function CustomerApp() {
                               <div className="card-footer">
                                 <span className="card-price">
                                   {formatPeso(product.price)}
-                                  <small style={{ display: 'block', fontWeight: 400, fontSize: '11px' }}>
+                                  <small
+                                    style={{
+                                      display: 'block',
+                                      fontWeight: 400,
+                                      fontSize: '11px',
+                                    }}
+                                  >
                                     {isPastryOrBreadCategory(
                                       product.categoryLabel ||
                                         product.category?.name,
@@ -754,7 +769,15 @@ export default function CustomerApp() {
                         border: '1px solid var(--almond)',
                       }}
                     >
-                      <SparklesIcon style={{ fontSize: '48px', width: 48, height: 48, opacity: 0.3 }} aria-hidden />
+                      <SparklesIcon
+                        style={{
+                          fontSize: '48px',
+                          width: 48,
+                          height: 48,
+                          opacity: 0.3,
+                        }}
+                        aria-hidden
+                      />
                       <h4 style={{ margin: '16px 0 8px', fontSize: '20px' }}>
                         No orders placed yet!
                       </h4>
@@ -799,7 +822,13 @@ export default function CustomerApp() {
                               <h4>Order Reference: {order.order_number}</h4>
                               <span>Submitted: {formatSubmittedAt(order)}</span>
                               {order.delivery_date && (
-                                <span style={{ display: 'block', fontSize: '12px', marginTop: '4px' }}>
+                                <span
+                                  style={{
+                                    display: 'block',
+                                    fontSize: '12px',
+                                    marginTop: '4px',
+                                  }}
+                                >
                                   Scheduled: {order.date} at {order.time}
                                 </span>
                               )}
@@ -825,7 +854,8 @@ export default function CustomerApp() {
                               <div className="progress-steps">
                                 {statusSteps.map((step, idx) => {
                                   let label =
-                                    step.charAt(0).toUpperCase() + step.slice(1);
+                                    step.charAt(0).toUpperCase() +
+                                    step.slice(1);
                                   if (step === 'ready') {
                                     label =
                                       order.type === 'delivery'
@@ -845,7 +875,14 @@ export default function CustomerApp() {
                                       className={`progress-step ${stepClass}`}
                                     >
                                       <div className="step-node">
-                                        {idx < activeIndex ? <CheckIcon style={{ width: 14, height: 14 }} aria-hidden /> : ''}
+                                        {idx < activeIndex ? (
+                                          <CheckIcon
+                                            style={{ width: 14, height: 14 }}
+                                            aria-hidden
+                                          />
+                                        ) : (
+                                          ''
+                                        )}
                                       </div>
                                       <span className="step-label">
                                         {label}
@@ -859,8 +896,12 @@ export default function CustomerApp() {
 
                           {order.statusKey === 'declined' && (
                             <div className="order-remarks-alert">
-                              <ExclamationTriangleIcon style={{ width: 18, height: 18 }} aria-hidden /> <strong>Bakery Notification:</strong> This
-                              order was declined. <br />
+                              <ExclamationTriangleIcon
+                                style={{ width: 18, height: 18 }}
+                                aria-hidden
+                              />{' '}
+                              <strong>Bakery Notification:</strong> This order
+                              was declined. <br />
                               <em>
                                 Remarks: "
                                 {order.remarks ||
@@ -907,7 +948,9 @@ export default function CustomerApp() {
                                       }}
                                     >
                                       Size: {item.size}
-                                      {item.flavor ? ` | Flavor: ${item.flavor}` : ''}
+                                      {item.flavor
+                                        ? ` | Flavor: ${item.flavor}`
+                                        : ''}
                                       {item.dedication &&
                                         ` | Dedication: "${item.dedication}"`}
                                     </span>
@@ -939,17 +982,32 @@ export default function CustomerApp() {
                                   marginBottom: '8px',
                                 }}
                               >
-                                <MapPinIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Type:</strong>{' '}
+                                <MapPinIcon
+                                  style={{ width: 14, height: 14 }}
+                                  aria-hidden
+                                />{' '}
+                                <strong>Type:</strong>{' '}
                                 {order.type === 'delivery'
                                   ? 'Home Delivery'
                                   : 'Store Pickup'}
                                 <br />
-                                <CalendarDaysIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Preferred Date:</strong> {order.date}
+                                <CalendarDaysIcon
+                                  style={{ width: 14, height: 14 }}
+                                  aria-hidden
+                                />{' '}
+                                <strong>Preferred Date:</strong> {order.date}
                                 <br />
-                                <ClockIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Preferred Time:</strong> {order.time}
+                                <ClockIcon
+                                  style={{ width: 14, height: 14 }}
+                                  aria-hidden
+                                />{' '}
+                                <strong>Preferred Time:</strong> {order.time}
                                 <br />
-                                <PhoneIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Contact:</strong>{' '}
-                                {order.customerPhone}
+                                <PhoneIcon
+                                  style={{ width: 14, height: 14 }}
+                                  aria-hidden
+                                />{' '}
+                                <strong>Contact:</strong> {order.customerPhone}
                               </p>
                               {order.type === 'delivery' && (
                                 <p
@@ -960,7 +1018,11 @@ export default function CustomerApp() {
                                     paddingTop: '6px',
                                   }}
                                 >
-                                  <HomeIcon style={{ width: 14, height: 14 }} aria-hidden /> <strong>Address:</strong> {order.address}
+                                  <HomeIcon
+                                    style={{ width: 14, height: 14 }}
+                                    aria-hidden
+                                  />{' '}
+                                  <strong>Address:</strong> {order.address}
                                 </p>
                               )}
                               <div
@@ -974,9 +1036,7 @@ export default function CustomerApp() {
                                 }}
                               >
                                 <span>Total Paid:</span>
-                                <span>
-                                  {formatPeso(order.totalPrice)}
-                                </span>
+                                <span>{formatPeso(order.totalPrice)}</span>
                               </div>
                             </div>
                           </div>
@@ -1028,29 +1088,29 @@ export default function CustomerApp() {
         />
       )}
 
-        {/* Login Modal (opens instead of redirecting to /login) */}
-        {isLoginOpen && (
-          <div className="modal-backdrop" onClick={() => setIsLoginOpen(false)}>
-            <div
-              className="modal-wrapper"
-              onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: '420px' }}
+      {/* Login Modal (opens instead of redirecting to /login) */}
+      {isLoginOpen && (
+        <div className="modal-backdrop" onClick={() => setIsLoginOpen(false)}>
+          <div
+            className="modal-wrapper"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '420px' }}
+          >
+            <button
+              type="button"
+              className="modal-close"
+              onClick={() => setIsLoginOpen(false)}
+              aria-label="Close"
             >
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() => setIsLoginOpen(false)}
-                aria-label="Close"
-              >
-                <XMarkIcon className="h-5 w-5" aria-hidden />
-              </button>
-              <div className="checkout-modal-inner">
-                <h3 className="modal-title">Sign in</h3>
-                <LoginForm onSuccess={handleLoginSuccess} />
-              </div>
+              <XMarkIcon className="h-5 w-5" aria-hidden />
+            </button>
+            <div className="checkout-modal-inner">
+              <h3 className="modal-title">Sign in</h3>
+              <LoginForm onSuccess={handleLoginSuccess} />
             </div>
           </div>
-        )}
+        </div>
+      )}
 
       {showLogoutConfirm && (
         <ConfirmModal
@@ -1069,8 +1129,7 @@ export default function CustomerApp() {
 // Helper Sub-Component 1: Product Customization Modal
 // ==========================================================================
 function ProductModal({ product, onClose, onAddToCart }) {
-  const categoryName =
-    product.categoryLabel || product.category?.name || '';
+  const categoryName = product.categoryLabel || product.category?.name || '';
   const isAvailable = product.is_available ?? product.available ?? true;
   const sizeOptions = getSizeOptionsForCategory(categoryName);
   const sizeLabel = getSizeOptionLabel(categoryName);
@@ -1081,16 +1140,14 @@ function ProductModal({ product, onClose, onAddToCart }) {
 
   useEffect(() => {
     const options = getSizeOptionsForCategory(categoryName);
-    setSelectedSize(options[0].label);
-    setDedication('');
-    setQuantity(1);
+    React.startTransition(() => {
+      setSelectedSize(options[0].label);
+      setDedication('');
+      setQuantity(1);
+    });
   }, [product.id, categoryName]);
 
-  const unitPrice = getPriceForSize(
-    product.price,
-    selectedSize,
-    categoryName,
-  );
+  const unitPrice = getPriceForSize(product.price, selectedSize, categoryName);
   const lineTotal = unitPrice * quantity;
   const imageSrc =
     product.image || product.image_url || '/images/placeholder.png';
@@ -1125,11 +1182,7 @@ function ProductModal({ product, onClose, onAddToCart }) {
         <div className="modal-grid">
           <div className="modal-visuals">
             <div className="modal-img-frame">
-              <img
-                src={imageSrc}
-                alt={product.name}
-                className="modal-img"
-              />
+              <img src={imageSrc} alt={product.name} className="modal-img" />
             </div>
             <h4
               style={{
@@ -1151,10 +1204,7 @@ function ProductModal({ product, onClose, onAddToCart }) {
               <span className="option-label">{sizeLabel}</span>
               <div className="option-selector">
                 {sizeOptions.map((sizeOption) => (
-                  <label
-                    key={sizeOption.label}
-                    className="radio-tile-wrapper"
-                  >
+                  <label key={sizeOption.label} className="radio-tile-wrapper">
                     <input
                       type="radio"
                       name="size-options"
@@ -1248,7 +1298,9 @@ if (typeof window !== 'undefined') {
       // remove flag so it doesn't reopen repeatedly
       localStorage.removeItem('openCheckout');
     }
-  } catch (e) {}
+  } catch {
+    /* ignore */
+  }
 }
 
 // ==========================================================================
@@ -1271,8 +1323,19 @@ function CartDrawer({
       <div className="cart-drawer-overlay" onClick={onClose}></div>
       <div className="cart-drawer">
         <div className="cart-header">
-          <h3 className="cart-title"><PhotoIcon style={{ width: 20, height: 20, marginRight: 8 }} aria-hidden /> Your Basket</h3>
-          <button type="button" className="cart-close-btn" onClick={onClose} aria-label="Close cart">
+          <h3 className="cart-title">
+            <PhotoIcon
+              style={{ width: 20, height: 20, marginRight: 8 }}
+              aria-hidden
+            />{' '}
+            Your Basket
+          </h3>
+          <button
+            type="button"
+            className="cart-close-btn"
+            onClick={onClose}
+            aria-label="Close cart"
+          >
             <XMarkIcon className="h-5 w-5" aria-hidden />
           </button>
         </div>
@@ -1280,7 +1343,11 @@ function CartDrawer({
         <div className="cart-body">
           {cart.length === 0 ? (
             <div className="cart-empty">
-              <ShoppingCartIcon style={{ width: 36, height: 36 }} className="cart-empty-icon" aria-hidden />
+              <ShoppingCartIcon
+                style={{ width: 36, height: 36 }}
+                className="cart-empty-icon"
+                aria-hidden
+              />
               <h4>Your basket is currently empty</h4>
               <p style={{ fontSize: '13px', marginTop: '6px' }}>
                 Browse our catalog to select delicious pastries and customize
@@ -1390,22 +1457,28 @@ function getTodayStr() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+const TIME_SLOTS_CONST = [
+  { value: '9:00 AM - 11:00 AM', startHour: 9, startMin: 0 },
+  { value: '12:00 PM - 2:00 PM', startHour: 12, startMin: 0 },
+  { value: '3:00 PM - 5:00 PM', startHour: 15, startMin: 0 },
+  { value: '6:00 PM - 8:00 PM', startHour: 18, startMin: 0 },
+];
+
 // ==========================================================================
 // Helper Sub-Component 3: Checkout Modal with Receipt Upload Preview
 // ==========================================================================
-function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) {
-  const defaultName = user
-    ? `${user.first_name} ${user.last_name}`.trim()
-    : '';
+function CheckoutModal({
+  cart,
+  user,
+  onClose,
+  onSubmit,
+  isSubmitting = false,
+}) {
+  const defaultName = user ? `${user.first_name} ${user.last_name}`.trim() : '';
 
   const todayStr = getTodayStr();
 
-  const TIME_SLOTS = [
-    { value: '9:00 AM - 11:00 AM', startHour: 9, startMin: 0 },
-    { value: '12:00 PM - 2:00 PM', startHour: 12, startMin: 0 },
-    { value: '3:00 PM - 5:00 PM', startHour: 15, startMin: 0 },
-    { value: '6:00 PM - 8:00 PM', startHour: 18, startMin: 0 },
-  ];
+  const TIME_SLOTS = TIME_SLOTS_CONST;
 
   const [form, setForm] = useState({
     name: defaultName,
@@ -1434,14 +1507,16 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
 
     // If all slots for today are past, return the last slot as a fallback
     return filtered.length > 0 ? filtered : [TIME_SLOTS[TIME_SLOTS.length - 1]];
-  }, [form.date, todayStr]);
+  }, [form.date, todayStr, TIME_SLOTS]);
 
   // Auto-adjust selected time if current slot is no longer available
   useEffect(() => {
     if (!availableTimeSlots.some((s) => s.value === form.time)) {
-      setForm((prev) => ({ ...prev, time: availableTimeSlots[0].value }));
+      React.startTransition(() => {
+        setForm((prev) => ({ ...prev, time: availableTimeSlots[0].value }));
+      });
     }
-  }, [availableTimeSlots]);
+  }, [availableTimeSlots, form.time]);
 
   const subtotal = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -1449,18 +1524,6 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
   );
   const deliveryFee = form.type === 'delivery' ? 50 : 0;
   const totalPrice = subtotal + deliveryFee;
-
-  // Handle uploaded slip visual preview
-  const handleReceiptChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm((prev) => ({ ...prev, receiptImg: reader.result }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const [phoneError, setPhoneError] = useState('');
   const [phoneTouched, setPhoneTouched] = useState(false);
@@ -1483,10 +1546,14 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
   const validatePhone = (phone) => {
     if (phone && phone.length > 4) {
       setPhoneError(
-        isValidPhilippinePhone(phone) ? '' : 'Please enter a valid Philippine mobile number (e.g., 09171234567).',
+        isValidPhilippinePhone(phone)
+          ? ''
+          : 'Please enter a valid Philippine mobile number (e.g., 09171234567).',
       );
     } else if (phone && phone.length > 0) {
-      setPhoneError('Please enter a valid Philippine mobile number (e.g., 09171234567).');
+      setPhoneError(
+        'Please enter a valid Philippine mobile number (e.g., 09171234567).',
+      );
     } else {
       setPhoneError('');
     }
@@ -1505,7 +1572,9 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
     setPhoneTouched(true);
     const normalizedPhone = normalizePhone(form.phone);
     if (!isValidPhilippinePhone(normalizedPhone)) {
-      setPhoneError('Please enter a valid Philippine mobile number (e.g., 09171234567).');
+      setPhoneError(
+        'Please enter a valid Philippine mobile number (e.g., 09171234567).',
+      );
       return;
     }
     if (form.type === 'delivery' && !form.address?.trim()) {
@@ -1523,7 +1592,12 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
         onClick={(e) => e.stopPropagation()}
         style={{ maxWidth: '840px' }}
       >
-        <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
+        <button
+          type="button"
+          className="modal-close"
+          onClick={onClose}
+          aria-label="Close"
+        >
           <XMarkIcon className="h-5 w-5" aria-hidden />
         </button>
 
@@ -1587,7 +1661,14 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
                     onBlur={handlePhoneBlur}
                   />
                   {phoneError && (
-                    <span style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                    <span
+                      style={{
+                        color: 'var(--danger)',
+                        fontSize: '12px',
+                        marginTop: '4px',
+                        display: 'block',
+                      }}
+                    >
                       {phoneError}
                     </span>
                   )}
@@ -1639,6 +1720,78 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
                   </div>
                 )}
 
+                {form.type === 'pickup' && (
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      padding: '14px',
+                      backgroundColor: 'var(--velvet-cream)',
+                      borderRadius: '10px',
+                      border: '1px solid var(--almond)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <MapPinIcon
+                        style={{ width: 16, height: 16 }}
+                        aria-hidden
+                      />
+                      <span>Store Location</span>
+                    </div>
+                    <p
+                      style={{
+                        fontSize: '13px',
+                        margin: 0,
+                        color: 'var(--cocoa)',
+                      }}
+                    >
+                      Nicai's Pastry
+                      <br />
+                      Plaridel St., Roxas City, Capiz
+                    </p>
+                    <a
+                      href="https://www.google.com/maps/dir/?api=1&destination=11.57911346855061,122.75501411170269" //here gabutang address
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '10px 16px',
+                        backgroundColor: '#4285F4',
+                        color: '#fff',
+                        borderRadius: '8px',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        marginTop: '4px',
+                        cursor: 'pointer',
+                        transition: 'opacity 0.2s',
+                      }}
+                      onMouseOver={(e) =>
+                        (e.currentTarget.style.opacity = '0.85')
+                      }
+                      onMouseOut={(e) => (e.currentTarget.style.opacity = '1')}
+                    >
+                      <MapPinIcon
+                        style={{ width: 16, height: 16 }}
+                        aria-hidden
+                      />
+                      View on Google Maps &amp; Get Directions
+                    </a>
+                  </div>
+                )}
+
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Scheduled Date *</label>
@@ -1680,16 +1833,16 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
                   </div>
                 </div>
 
-                <h4
+                {/* <h4
                   className="checkout-section-title"
                   style={{ marginTop: '24px' }}
                 >
                   Secure Payments
-                </h4>
+                </h4> */}
 
                 <div className="form-group">
                   <label className="form-label">Payment Method</label>
-                  <div className="readonly-field">Cash on Delivery / Pickup</div>
+                  <div className="readonly-field">Cash Only</div>
                 </div>
               </div>
 
@@ -1794,7 +1947,8 @@ function CheckoutModal({ cart, user, onClose, onSubmit, isSubmitting = false }) 
                       border: '1px solid rgba(212, 124, 106, 0.08)',
                     }}
                   >
-                    <strong>Payment:</strong> Cash will be collected upon delivery or pickup.
+                    <strong>Payment:</strong> Cash will be collected upon
+                    delivery or pickup.
                   </div>
 
                   <button

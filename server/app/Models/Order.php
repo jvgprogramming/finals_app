@@ -29,7 +29,6 @@ class Order extends Model
     protected $casts = [
         'total_amount' => 'decimal:2',
         'delivery_fee' => 'decimal:2',
-        'delivery_date' => 'datetime',
     ];
 
     /**

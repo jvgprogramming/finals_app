@@ -27,9 +27,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return;
             }
 
-            // Let HTTP exceptions and auth errors pass through with proper
-            // status codes and messages that the front-end depends on
+            // Let HTTP exceptions, validation errors, and auth errors pass through
+            // with proper status codes and messages that the front-end depends on
             if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface ||
+                $e instanceof \Illuminate\Validation\ValidationException ||
                 $e instanceof \Illuminate\Auth\AuthenticationException) {
                 return;
             }

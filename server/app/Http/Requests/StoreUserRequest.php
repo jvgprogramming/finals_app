@@ -33,4 +33,11 @@ class StoreUserRequest extends FormRequest
             'add_user_profile_picture' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'username.unique' => 'User already exists',
+        ];
+    }
 }

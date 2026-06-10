@@ -149,7 +149,11 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
           Username
         </label>
         <div className="form-control-icon-wrapper auth-control">
-          <UserIcon style={{ width: 18, height: 18 }} className="form-control-icon" aria-hidden />
+          <UserIcon
+            style={{ width: 18, height: 18 }}
+            className="form-control-icon"
+            aria-hidden
+          />
           <input
             id="username"
             type="text"
@@ -171,7 +175,11 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
           Password
         </label>
         <div className="form-control-icon-wrapper auth-control auth-control-password">
-          <LockClosedIcon style={{ width: 18, height: 18 }} className="form-control-icon" aria-hidden />
+          <LockClosedIcon
+            style={{ width: 18, height: 18 }}
+            className="form-control-icon"
+            aria-hidden
+          />
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
@@ -191,7 +199,11 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
             tabIndex={-1}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
-            {showPassword ? <EyeSlashIcon style={{ width: 18, height: 18 }} aria-hidden /> : <EyeIcon style={{ width: 18, height: 18 }} aria-hidden />}
+            {showPassword ? (
+              <EyeSlashIcon style={{ width: 18, height: 18 }} aria-hidden />
+            ) : (
+              <EyeIcon style={{ width: 18, height: 18 }} aria-hidden />
+            )}
           </button>
         </div>
       </div>
@@ -211,7 +223,6 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
             autoComplete="new-password"
             minLength={6}
             maxLength={12}
-
           />
         </div>
       )}
@@ -219,14 +230,17 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
       {/* Error message */}
       {error && (
         <div className="auth-error">
-          <ExclamationTriangleIcon style={{ width: 18, height: 18 }} aria-hidden />
+          <ExclamationTriangleIcon
+            style={{ width: 18, height: 18 }}
+            aria-hidden
+          />
           <span>{error}</span>
         </div>
       )}
-
+      {/* 
       <p className="auth-form-note">
         Your session will be restored automatically the next time you visit.
-      </p>
+      </p> */}
 
       {/* Submit */}
       <button
@@ -235,18 +249,18 @@ const LoginForm: FC<Props> = ({ onSuccess }) => {
         disabled={isLoading}
       >
         {isLoading ? (
-            <>
-              <span
-                className="spinner spinner-sm"
-                style={{ borderTopColor: 'white' }}
-              />
-              {isRegister ? 'Creating Account…' : 'Signing In…'}
-            </>
-          ) : isRegister ? (
-            <>Create Account</>
-          ) : (
-            <>Sign In</>
-          )}
+          <>
+            <span
+              className="spinner spinner-sm"
+              style={{ borderTopColor: 'white' }}
+            />
+            {isRegister ? 'Creating Account…' : 'Signing In…'}
+          </>
+        ) : isRegister ? (
+          <>Create Account</>
+        ) : (
+          <>Sign In</>
+        )}
       </button>
     </form>
   );

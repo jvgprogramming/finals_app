@@ -61,7 +61,42 @@ export function parseApiDateTime(value: string | undefined | null): Date | null 
   return d;
 }
 
-function formatDateParts(iso: string | undefined | null): { date: string; time: string } {
+/** Format a local datetime string "YYYY-MM-DD HH:mm:ss" without timezone conversion. */
+function formatLocalDateParts(
+  value: string | undefined | null,
+): { date: string; time: string } {
+  if (!value) return { date: '—', time: '—' };
+  const parts = String(value).trim().split(' ');
+  if (parts.length !== 2) return { date: '—', time: '—' };
+
+  const [datePart, timePart] = parts;
+
+  // Format date: parse YYYY-MM-DD via Date without timezone (using UTC methods to avoid shifting)
+  const dateSegments = datePart.split('-');
+  if (dateSegments.length !== 3) return { date: '—', time: '—' };
+  const dateObj = new Date(
+    parseInt(dateSegments[0], 10),
+    parseInt(dateSegments[1], 10) - 1,
+    parseInt(dateSegments[2], 10),
+  );
+  const formattedDate = dateObj.toLocaleDateString(undefined, dateFormat);
+
+  // Format time from HH:mm:ss to 12-hour format
+  const timeSegments = timePart.split(':');
+  if (timeSegments.length < 2) return { date: '—', time: '—' };
+  const hours = parseInt(timeSegments[0], 10);
+  const minutes = timeSegments[1];
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  const formattedTime = `${displayHours}:${minutes} ${ampm}`;
+
+  return { date: formattedDate, time: formattedTime };
+}
+
+function formatDateParts(iso: string | undefined | null, isLocal = false): { date: string; time: string } {
+  if (isLocal) {
+    return formatLocalDateParts(iso);
+  }
   const d = parseApiDateTime(iso ?? undefined);
   if (!d) {
     return { date: '—', time: '—' };
@@ -89,7 +124,7 @@ function readCustomization(row: Record<string, unknown>) {
 
 export function mapOrderFromApi(order: Order & Record<string, unknown>): UiOrder {
   const placed = formatDateParts(order.created_at as string);
-  const scheduled = formatDateParts(order.delivery_date as string);
+  const scheduled = formatDateParts(order.delivery_date as string, true);
 
   const user = order.user as Order['user'] | undefined;
   const customerName =
