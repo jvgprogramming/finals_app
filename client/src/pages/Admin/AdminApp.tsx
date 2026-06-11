@@ -1,7 +1,12 @@
-// @ts-nocheck
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import type { CartItem } from '../../services/CartService';
+import type { Category } from '../../services/ProductService';
+import type { Order } from '../../services/OrderService';
+import type { Notification as AppNotification } from '../../services/NotificationService';
+import type { UiProduct } from '../../utils/mapProduct';
+import type { UiOrder } from '../../utils/mapOrder';
 import CartService from '../../services/CartService';
 import ProductService from '../../services/ProductService';
 import OrderService from '../../services/OrderService';
@@ -14,9 +19,7 @@ import {
   orderMatchesFilter,
   formatPlacedAt,
   formatScheduledAt,
-  formatUpdatedAt,
 } from '../../utils/mapOrder';
-import { formatDeliveryDateForApi } from '../../utils/checkoutDate';
 import AdminDetailModal from '../../components/admin/AdminDetailModal';
 import NotificationPanel from '../../components/admin/NotificationPanel';
 import SalesTrendChart from '../../components/admin/SalesTrendChart';
@@ -28,22 +31,10 @@ import { formatPeso } from '../../utils/currency';
 import { resolveProductImageUrl } from '../../utils/imageUrl';
 import {
   BellIcon,
-  ShoppingCartIcon,
-  MagnifyingGlassIcon,
-  CheckIcon,
-  ExclamationTriangleIcon,
-  MapPinIcon,
-  CalendarDaysIcon,
-  ClockIcon,
-  PhoneIcon,
-  HomeIcon,
-  PhotoIcon,
   UserIcon,
-  CameraIcon,
   SparklesIcon,
   XMarkIcon,
   CurrencyDollarIcon,
-  LightBulbIcon,
   ChartBarIcon,
   Bars3Icon,
 } from '@heroicons/react/24/outline';
@@ -53,43 +44,45 @@ export default function AdminApp() {
   // App Core States
   // ==========================================================================
   const { logout, isLoading, isAuthenticated, user } = useAuth();
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [, setIsLoginOpen] = useState(false);
   const navigate = useNavigate();
   const [activeView, setActiveView] = useState('admin-dashboard');
 
   // Data Persistence states
-  const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [cart, setCart] = useState([]);
-  const [notifications, setNotifications] = useState([]);
+  const [products, setProducts] = useState<UiProduct[]>([]);
+  const [orders, setOrders] = useState<UiOrder[]>([]);
+  const [, setCart] = useState<CartItem[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   // UI Interactive States
-  const [selectedProduct, setSelectedProduct] = useState(null); // Product customization modal
-  const [isCartOpen, setIsCartOpen] = useState(false); // Cart slide drawer toggle
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false); // Checkout dialog toggle
-  const [adminDetailOrder, setAdminDetailOrder] = useState(null); // Admin inspect order details
+  const [, setIsCheckoutOpen] = useState(false); // Checkout dialog toggle
+  const [adminDetailOrder, setAdminDetailOrder] = useState<UiOrder | null>(null); // Admin inspect order details
 
   // Toast notifications for Admin in real time
-  const [toasts, setToasts] = useState([]);
+  const [toasts, setToasts] = useState<Array<{ id: number; text: string; type: string; data: unknown }>>([]);
   const [shakingBell, setShakingBell] = useState(false);
 
   // Search & Catalog Filter states
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [sortBy, setSortBy] = useState('popular'); // 'popular', 'price-asc', 'price-desc'
 
   // Admin section filter states
   const [adminOrderFilter, setAdminOrderFilter] = useState('All'); // 'All', 'Pending', 'Accepted', 'Preparing', 'Ready', 'Completed', 'Declined'
   const [adminOrderPage, setAdminOrderPage] = useState(1);
 
   // Product editor state (Add/Edit)
-  const [editingProduct, setEditingProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState<UiProduct | null>(null);
   const [isProductEditorOpen, setIsProductEditorOpen] = useState(false);
   const [isImageDragging, setIsImageDragging] = useState(false);
-  const productImageInputRef = useRef(null);
-  const productImageFileRef = useRef(null);
-  const [categories, setCategories] = useState([]);
-  const [newProductForm, setNewProductForm] = useState({
+  const productImageInputRef = useRef<HTMLInputElement>(null);
+  const productImageFileRef = useRef<File | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [newProductForm, setNewProductForm] = useState<{
+    name: string;
+    price: string;
+    description: string;
+    category_id: string;
+    is_available: boolean;
+    image: File | string | null;
+  }>({
     name: '',
     price: '',
     description: '',
@@ -97,15 +90,15 @@ export default function AdminApp() {
     is_available: true,
     image: null,
   });
-  const [togglingProductId, setTogglingProductId] = useState(null);
+  const [togglingProductId, setTogglingProductId] = useState<number | null>(null);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
-  const [fetchError, setFetchError] = useState(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [isNotifPanelOpen, setIsNotifPanelOpen] = useState(false);
-  const [pollStatus, setPollStatus] = useState('connected');
+  const [, setPollStatus] = useState('connected');
 
   const confirmLogout = async () => {
     setShowLogoutConfirm(false);
@@ -139,7 +132,9 @@ export default function AdminApp() {
         setIsCheckoutOpen(true);
         localStorage.removeItem('openCheckout');
       }
-    } catch (e) {}
+    } catch {
+      // Ignore - localStorage may not be available
+    }
   }, []);
 
   // If a page requested login (pendingCheckout flag), open the login modal
@@ -149,7 +144,9 @@ export default function AdminApp() {
       if (pending === '1') {
         setIsLoginOpen(true);
       }
-    } catch (e) {}
+    } catch {
+      // Ignore - localStorage may not be available
+    }
   }, []);
 
   // Fetch products on mount
@@ -236,7 +233,7 @@ export default function AdminApp() {
       try {
         const notificationsResult =
           await NotificationService.getNotifications();
-        setNotifications(notificationsResult.data || notificationsResult);
+        setNotifications((notificationsResult.data || notificationsResult) as AppNotification[]);
       } catch (err) {
         console.error('Error fetching notifications:', err);
       }
@@ -249,7 +246,7 @@ export default function AdminApp() {
   useNotificationPolling({
     interval: 10000,
     enabled: isAuthenticated && !isLoading,
-    onNotificationsUpdate: (newNotifications) => {
+    onNotificationsUpdate: (newNotifications: AppNotification[]) => {
       setNotifications(newNotifications);
     },
     onOrdersUpdate: (newOrders) => {
@@ -273,116 +270,8 @@ export default function AdminApp() {
     },
   });
 
-  // ==========================================================================
-  // Customer Functions
-  // ==========================================================================
-
-  // Add item to cart
-  const handleAddToCart = async (product, options) => {
-    const updatedCart = await CartService.addItem({
-      product_id: product.id,
-      name: product.name,
-      image: product.image_url || '/images/placeholder.png',
-      quantity: options.quantity,
-      size: options.size,
-      dedication: options.dedication,
-      price: product.price,
-    });
-
-    setCart(updatedCart);
-    setSelectedProduct(null);
-    playSuccessSound();
-  };
-
-  // Adjust cart items
-  const handleUpdateCartQty = async (itemId, newQty) => {
-    const updatedCart = await CartService.updateQuantity(itemId, newQty);
-    setCart(updatedCart);
-  };
-
-  const handleRemoveCartItem = async (itemId) => {
-    const updatedCart = await CartService.removeItem(itemId);
-    setCart(updatedCart);
-  };
-
-  // Checkout submission - submit order to API
-  const handlePlaceOrder = async (checkoutForm) => {
-    try {
-      // Transform cart items to API format
-      const orderItems = cart.map((item) => ({
-        product_id: item.id,
-        quantity: item.quantity,
-        customization: {
-          dedication_message: item.dedication || null,
-          size: item.size || null,
-          flavor: item.flavor || null,
-          color_theme: null,
-          custom_notes: null,
-        },
-      }));
-
-      // Prepare order data for API
-      const orderData = {
-        items: orderItems,
-        notes: checkoutForm.paymentMethod
-          ? `Payment: ${checkoutForm.paymentMethod}`
-          : '',
-        delivery_date: checkoutForm.date
-          ? formatDeliveryDateForApi(checkoutForm.date, checkoutForm.time)
-          : null,
-      };
-
-      // Create order via API
-      const createdOrder = await OrderService.createOrder(orderData);
-
-      // Update state with returned order
-      setOrders((prev) => [mapOrderFromApi(createdOrder), ...prev]);
-      await CartService.clearCart();
-      setCart([]); // Clear cart
-      setIsCheckoutOpen(false);
-      setIsCartOpen(false);
-      playSuccessSound();
-
-      // Optional: Create a notification (normally done by backend)
-      const notification = {
-        id: `notif-${Date.now()}`,
-        title: `Order ${createdOrder.order_number} Received`,
-        message: `Your order has been submitted and is pending bakery approval.`,
-        is_read: false,
-      };
-      setNotifications((prev) => [notification, ...prev]);
-    } catch (err) {
-      console.error('Error placing order:', err);
-      // Show error feedback
-      alert('Failed to place order. Please try again.');
-    }
-  };
-
-  const handleProceedCheckout = () => {
-    if (!isAuthenticated) {
-      // remember user intended to checkout and redirect to login
-      localStorage.setItem('pendingCheckout', '1');
-      setIsLoginOpen(true);
-      return;
-    }
-    setIsCheckoutOpen(true);
-  };
-
-  const handleLoginSuccess = (user) => {
-    setIsLoginOpen(false);
-    if (user.role === 'admin') {
-      navigate('/admin', { replace: true });
-      return;
-    }
-    const pending = localStorage.getItem('pendingCheckout');
-    if (pending) {
-      localStorage.removeItem('pendingCheckout');
-      setIsCheckoutOpen(true);
-    }
-  };
-
   // Helper to add temporary bottom-right toast messages
-  const addToast = (text, type, data = null) => {
+  const addToast = (text: string, type: string, data: unknown = null) => {
     setToasts((prev) => [...prev, { id: Date.now(), text, type, data }]);
   };
 
@@ -391,10 +280,10 @@ export default function AdminApp() {
   // ==========================================================================
 
   // Accept Order via API
-  const handleAcceptOrder = async (orderId, remarks = '') => {
+  const handleAcceptOrder = async (orderId: number) => {
     try {
       const updatedOrder = mapOrderFromApi(
-        await OrderService.acceptOrder(orderId),
+        (await OrderService.acceptOrder(orderId)) as unknown as Order & Record<string, unknown>,
       );
 
       setOrders((prev) =>
@@ -415,7 +304,7 @@ export default function AdminApp() {
   };
 
   // Decline Order via API
-  const handleDeclineOrder = async (orderId, reason) => {
+  const handleDeclineOrder = async (orderId: number, reason: string) => {
     if (!reason.trim()) {
       alert('Please provide a reason for declining the order.');
       return;
@@ -423,7 +312,7 @@ export default function AdminApp() {
 
     try {
       const updatedOrder = mapOrderFromApi(
-        await OrderService.declineOrder(orderId, reason),
+        (await OrderService.declineOrder(orderId, reason)) as unknown as Order & Record<string, unknown>,
       );
 
       setOrders((prev) =>
@@ -442,7 +331,7 @@ export default function AdminApp() {
   };
 
   // Shift status progression via API
-  const handleProgressOrder = async (orderId, nextStatus) => {
+  const handleProgressOrder = async (orderId: number, nextStatus: string) => {
     try {
       let updatedOrder;
 
@@ -461,7 +350,7 @@ export default function AdminApp() {
           throw new Error(`Unknown status: ${nextStatus}`);
       }
 
-      const mapped = mapOrderFromApi(updatedOrder);
+      const mapped = mapOrderFromApi(updatedOrder as unknown as Order & Record<string, unknown>);
       setOrders((prev) =>
         prev.map((order) => (order.id === mapped.id ? mapped : order)),
       );
@@ -477,7 +366,7 @@ export default function AdminApp() {
     }
   };
 
-  const handleToggleProductAvailability = async (productId) => {
+  const handleToggleProductAvailability = async (productId: number) => {
     const product = products.find((p) => p.id === productId);
     if (!product || togglingProductId === productId) return;
 
@@ -528,7 +417,7 @@ export default function AdminApp() {
     }
   };
 
-  const setProductImageFromFile = (file) => {
+  const setProductImageFromFile = (file: File | undefined) => {
     if (!file || !file.type || !file.type.startsWith('image/')) {
       alert('Please drop an image file.');
       return;
@@ -559,20 +448,20 @@ export default function AdminApp() {
     setIsProductEditorOpen(true);
   };
 
-  const handleImageInputChange = (e) => {
+  const handleImageInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setProductImageFromFile(file);
     e.target.value = '';
   };
 
-  const handleImageDrop = (e) => {
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsImageDragging(false);
     const file = e.dataTransfer.files?.[0];
     setProductImageFromFile(file);
   };
 
-  const handleDeleteProduct = async (productId) => {
+  const handleDeleteProduct = async (productId: number) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
@@ -598,7 +487,7 @@ export default function AdminApp() {
   };
 
   // Add/Edit dynamic inventory via API
-  const handleSaveProduct = async (e) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProductForm.name || !newProductForm.price) {
       alert('Please fill in the product name and price.');
@@ -613,7 +502,7 @@ export default function AdminApp() {
     // Prepare FormData for file upload
     const formData = new FormData();
     formData.append('name', newProductForm.name);
-    formData.append('price', parseFloat(newProductForm.price));
+    formData.append('price', String(parseFloat(newProductForm.price)));
     formData.append('description', newProductForm.description?.trim() ?? '');
     formData.append('category_id', newProductForm.category_id);
     formData.append('is_available', newProductForm.is_available ? '1' : '0');
@@ -656,13 +545,13 @@ export default function AdminApp() {
     }
   };
 
-  const handleEditProductClick = (product) => {
+  const handleEditProductClick = (product: UiProduct) => {
     setEditingProduct(product);
     setNewProductForm({
       name: product.name,
-      price: product.price,
+      price: String(product.price),
       description: product.description,
-      category_id: product.category?.id || '',
+      category_id: String(product.category?.id ?? ''),
       is_available: Boolean(product.is_available ?? product.available),
       image: product.image || product.image_url || null,
     });
@@ -690,13 +579,13 @@ export default function AdminApp() {
     try {
       await NotificationService.markAllNotificationsRead();
       const result = await NotificationService.getNotifications();
-      setNotifications(result.data);
+      setNotifications(result.data as AppNotification[]);
     } catch (err) {
       console.error('Error marking notifications read:', err);
     }
   };
 
-  const handleNotificationOrderSelect = (orderId) => {
+  const handleNotificationOrderSelect = (orderId: number) => {
     const order = orders.find((o) => o.id === orderId);
     if (order) {
       setAdminDetailOrder(order);
@@ -710,35 +599,6 @@ export default function AdminApp() {
   // ==========================================================================
   // Filters & Analytics Computations (useMemo)
   // ==========================================================================
-
-  // Build available categories from API products
-  const availableCategories = useMemo(() => {
-    const categorySet = new Set(['All']);
-    products.forEach((p: any) => {
-      if (p.category?.name) {
-        categorySet.add(p.category.name);
-      }
-    });
-    return Array.from(categorySet);
-  }, [products]);
-
-  // Customer Filtering logic
-  const filteredProducts = useMemo(() => {
-    return products
-      .filter((product) => {
-        const matchSearch =
-          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchCategory =
-          activeCategory === 'All' || product.category?.name === activeCategory;
-        return matchSearch && matchCategory;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'price-asc') return a.price - b.price;
-        if (sortBy === 'price-desc') return b.price - a.price;
-        return b.id - a.id; // popularity mock default
-      });
-  }, [products, searchQuery, activeCategory, sortBy]);
 
   // Admin Filtering logic for order queues
   const filteredAdminOrders = useMemo(() => {
@@ -774,12 +634,6 @@ export default function AdminApp() {
     return { total, pending, accepted, declined, completed, revenue };
   }, [orders]);
 
-  // Custom Notifications Counts
-  const unreadNotifCount = useMemo(
-    () => notifications.filter((n) => !n.is_read).length,
-    [notifications],
-  );
-
   return (
     <div className="app-container">
       {/* IN-APP REALTIME ALERTS TOAST WRAPPER */}
@@ -797,7 +651,7 @@ export default function AdminApp() {
               <button
                 className="btn-sm btn-accept"
                 onClick={() => {
-                  setAdminDetailOrder(toast.data);
+                  setAdminDetailOrder(toast.data as UiOrder);
                   setActiveView('admin-orders');
                   setAdminOrderFilter('Pending');
                 }}
@@ -851,7 +705,10 @@ export default function AdminApp() {
                 </span>
               </div>
               <div className="sm:hidden">
-                <h1 className="text-lg font-bold font-serif" style={{ color: 'var(--espresso)' }}>
+                <h1
+                  className="text-lg font-bold font-serif"
+                  style={{ color: 'var(--espresso)' }}
+                >
                   Nicai's
                 </h1>
               </div>
@@ -1069,7 +926,9 @@ export default function AdminApp() {
             <section className="admin-layout px-4 sm:px-0">
               <div className="container">
                 <div className="admin-header-row flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <h2 className="admin-view-title text-2xl md:text-3xl lg:text-4xl">Operational Overview</h2>
+                  <h2 className="admin-view-title text-2xl md:text-3xl lg:text-4xl">
+                    Operational Overview
+                  </h2>
                   {/* <span
                     style={{
                       fontSize: '14px',
@@ -1285,7 +1144,9 @@ export default function AdminApp() {
             <section className="admin-layout px-4 sm:px-0">
               <div className="container" style={{ maxWidth: '1000px' }}>
                 <div className="admin-header-row flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <h2 className="admin-view-title text-2xl md:text-3xl lg:text-4xl">Order Processing Board</h2>
+                  <h2 className="admin-view-title text-2xl md:text-3xl lg:text-4xl">
+                    Order Processing Board
+                  </h2>
                   {/* <span
                     style={{
                       fontSize: '14px',
@@ -1346,7 +1207,10 @@ export default function AdminApp() {
                       </div>
                     ) : (
                       paginatedAdminOrders.map((order) => (
-                        <div key={order.id} className="board-row flex flex-col sm:grid sm:grid-cols-[minmax(200px,420px)_130px_260px] sm:items-center gap-3">
+                        <div
+                          key={order.id}
+                          className="board-row flex flex-col sm:grid sm:grid-cols-[minmax(200px,420px)_130px_260px] sm:items-center gap-3"
+                        >
                           <div
                             className="admin-order-meta"
                             onClick={() => setAdminDetailOrder(order)}
@@ -1363,12 +1227,6 @@ export default function AdminApp() {
                                 {formatPlacedAt(order)}
                                 {order.delivery_date
                                   ? ` · Scheduled: ${formatScheduledAt(order)}`
-                                  : ''}
-                                {order.status === 'Completed'
-                                  ? ` · Completed: ${formatUpdatedAt(order)}`
-                                  : ''}
-                                {order.status === 'Declined'
-                                  ? ` · Declined: ${formatUpdatedAt(order)}`
                                   : ''}
                               </span>
                             </div>
@@ -1426,7 +1284,8 @@ export default function AdminApp() {
                               </button>
                             )}
 
-                            {(order.status === 'Completed' || order.status === 'Declined') && (
+                            {(order.status === 'Completed' ||
+                              order.status === 'Declined') && (
                               <button
                                 className="btn-sm btn-view-details"
                                 onClick={() => setAdminDetailOrder(order)}
@@ -1520,7 +1379,9 @@ export default function AdminApp() {
             <section className="admin-layout px-4 sm:px-0">
               <div className="container">
                 <div className="admin-header-row flex-col sm:flex-row items-start sm:items-center gap-3">
-                  <h2 className="admin-view-title text-2xl md:text-3xl lg:text-4xl">Product Inventory</h2>
+                  <h2 className="admin-view-title text-2xl md:text-3xl lg:text-4xl">
+                    Product Inventory
+                  </h2>
                   <div
                     style={{
                       display: 'flex',
@@ -1578,7 +1439,10 @@ export default function AdminApp() {
                         />
                       ) : (
                         products.map((product) => (
-                          <div key={product.id} className="inventory-item-row flex-col sm:flex-row items-start sm:items-center gap-3">
+                          <div
+                            key={product.id}
+                            className="inventory-item-row flex-col sm:flex-row items-start sm:items-center gap-3"
+                          >
                             <div className="inventory-item-meta">
                               <img
                                 src={
