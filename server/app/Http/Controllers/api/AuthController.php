@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -71,6 +72,21 @@ class AuthController extends Controller
 
             $token = $user->createToken('auth-token')->plainTextToken;
 
+            try {
+                Http::post(
+                    'http://localhost:5678/webhook/register-user',
+                    [
+                        'first_name' => $user->first_name,
+                        'last_name' => $user->last_name,
+                        'username' => $user->username,
+                        'role' => $user->role,
+                        'registered_at' => now()->toDateTimeString(),
+                    ]
+                );
+            } catch (\Exception $e) {
+                // Don't stop registration if n8n is offline
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'User registered successfully',
@@ -84,6 +100,8 @@ class AuthController extends Controller
             ], 400);
         }
     }
+
+    
 
     /**
      * Logout endpoint.
