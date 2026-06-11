@@ -45,9 +45,11 @@ import {
   HomeIcon,
   PhotoIcon,
   SparklesIcon,
+  UserIcon,
   XMarkIcon,
   MinusIcon,
   PlusIcon,
+  Bars3Icon,
 } from '@heroicons/react/24/outline';
 
 export default function CustomerApp() {
@@ -79,6 +81,7 @@ export default function CustomerApp() {
   const [sortBy, setSortBy] = useState('popular'); // 'popular', 'price-asc', 'price-desc'
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [fetchError, setFetchError] = useState(null);
@@ -462,69 +465,127 @@ export default function CustomerApp() {
          CUSTOMER PORTAL SHELL
          ========================================================================== */}
       {activeView.startsWith('customer') && (
-        <>
-          <header className="glass-header">
-            <div className="container header-inner">
-              <div
-                className="logo-link"
-                onClick={() => setActiveView('customer-home')}
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="logo-icon">N</div>
-                <div>
-                  <h1 className="logo-text">Nicai's Pastry</h1>
-                  <span className="logo-subtitle">Premium Confeitaria</span>
-                </div>
-              </div>
-
-              <nav className="nav-actions">
-                <button
-                  className={`nav-link ${activeView === 'customer-home' ? 'active' : ''}`}
+        <>            <header className="glass-header">
+              <div className="container header-inner">
+                <div
+                  className="logo-link"
                   onClick={() => setActiveView('customer-home')}
-                  style={{
-                    border: 'none',
-                    background: 'none',
-                    cursor: 'pointer',
-                  }}
+                  style={{ cursor: 'pointer' }}
                 >
-                  Cake Menu
-                </button>
-                <button
-                  className={`nav-link ${activeView === 'customer-orders' ? 'active' : ''}`}
-                  onClick={() => setActiveView('customer-orders')}
-                  style={{
-                    border: 'none',
-                    background: 'none',
-                    cursor: 'pointer',
-                    position: 'relative',
-                  }}
-                >
-                  My Orders
-                  {unreadNotifCount > 0 && (
+                  <div className="logo-icon">N</div>
+                  <div className="max-sm:hidden">
+                    <h1 className="logo-text">Nicai's Pastry</h1>
+                    <span className="logo-subtitle">Premium Confeitaria</span>
+                  </div>
+                  <div className="sm:hidden">
+                    <h1 className="text-lg font-bold font-serif">Nicai's</h1>
+                  </div>
+                </div>
+
+                {/* Desktop navigation - hidden on small screens */}
+                <nav className="nav-actions">
+                  <button
+                    className={`nav-link ${activeView === 'customer-home' ? 'active' : ''}`}
+                    onClick={() => setActiveView('customer-home')}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cake Menu
+                  </button>
+                  <button
+                    className={`nav-link ${activeView === 'customer-orders' ? 'active' : ''}`}
+                    onClick={() => setActiveView('customer-orders')}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      cursor: 'pointer',
+                      position: 'relative',
+                    }}
+                  >
+                    My Orders
+                    {unreadNotifCount > 0 && (
+                      <span
+                        className="badge"
+                        style={{ top: '-2px', right: '-12px' }}
+                      >
+                        {unreadNotifCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {isAuthenticated && (
+                    <NotificationPanel
+                      notifications={notifications}
+                      isOpen={isNotifPanelOpen}
+                      shaking={shakingBell}
+                      onToggle={() => setIsNotifPanelOpen((v) => !v)}
+                      onMarkAllRead={handleMarkNotificationsRead}
+                      onSelectOrder={handleNotificationOrderSelect}
+                    />
+                  )}
+
+                  {/* Cart Action */}
+                  <button
+                    className="btn-icon"
+                    onClick={() => setIsCartOpen(true)}
+                  >
+                    <ShoppingCartIcon
+                      style={{ width: 20, height: 20 }}
+                      aria-hidden
+                    />
+                    {cart.length > 0 && (
+                      <span className="badge">
+                        {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                      </span>
+                    )}
+                  </button>
+                  {isAuthenticated && (
                     <span
-                      className="badge"
-                      style={{ top: '-2px', right: '-12px' }}
+                      style={{
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        color: 'var(--cocoa)',
+                        whiteSpace: 'nowrap',
+                      }}
                     >
-                      {unreadNotifCount}
+                      Hi, {user?.first_name}
                     </span>
                   )}
-                </button>
+                  {!isAuthenticated ? (
+                    <button
+                      className="nav-link"
+                      onClick={() => setIsLoginOpen(true)}
+                      style={{
+                        border: '1px solid var(--almond)',
+                        background: 'var(--velvet-cream)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Login
+                    </button>
+                  ) : (
+                    <button
+                      className="nav-link"
+                      onClick={() => setShowLogoutConfirm(true)}
+                      style={{
+                        border: '1px solid var(--almond)',
+                        background: 'var(--velvet-cream)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Logout
+                    </button>
+                  )}
+                </nav>
 
-                {isAuthenticated && (
-                  <NotificationPanel
-                    notifications={notifications}
-                    isOpen={isNotifPanelOpen}
-                    shaking={shakingBell}
-                    onToggle={() => setIsNotifPanelOpen((v) => !v)}
-                    onMarkAllRead={handleMarkNotificationsRead}
-                    onSelectOrder={handleNotificationOrderSelect}
-                  />
-                )}
-
-                {/* Cart Action */}
+                {/* Mobile cart icon */}
                 <button
-                  className="btn-icon"
+                  className="btn-icon mobile-nav-toggle"
                   onClick={() => setIsCartOpen(true)}
+                  aria-label="Open cart"
                 >
                   <ShoppingCartIcon
                     style={{ width: 20, height: 20 }}
@@ -536,53 +597,128 @@ export default function CustomerApp() {
                     </span>
                   )}
                 </button>
-                {!isAuthenticated ? (
+
+                {/* Mobile hamburger */}
+                <button
+                  className="btn-icon mobile-nav-toggle"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  aria-label="Open menu"
+                >
+                  <Bars3Icon className="h-6 w-6" aria-hidden />
+                </button>
+              </div>
+            </header>
+
+            {/* Mobile Navigation Drawer */}
+            {isMobileMenuOpen && (
+              <>
+                <div className="mobile-nav-overlay" onClick={() => setIsMobileMenuOpen(false)} />
+                <div className="mobile-nav-drawer">
+                  <div className="mobile-nav-brand">
+                    <div className="logo-icon">N</div>
+                    <div>
+                      <p className="logo-text" style={{ fontSize: 18 }}>Nicai's Pastry</p>
+                    </div>
+                  </div>
+
+                  <nav className="flex-1 flex flex-col gap-1">
+                    <button
+                      className={`mobile-nav-item ${activeView === 'customer-home' ? 'active' : ''}`}
+                      onClick={() => {
+                        setActiveView('customer-home');
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <MagnifyingGlassIcon className="h-5 w-5" aria-hidden />
+                      Cake Menu
+                    </button>
+                    <button
+                      className={`mobile-nav-item ${activeView === 'customer-orders' ? 'active' : ''}`}
+                      onClick={() => {
+                        setActiveView('customer-orders');
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <BellIcon className="h-5 w-5" aria-hidden />
+                      My Orders
+                      {unreadNotifCount > 0 && (
+                        <span className="badge" style={{ position: 'static', marginLeft: 'auto' }}>
+                          {unreadNotifCount}
+                        </span>
+                      )}
+                    </button>
+
+                    <div className="mobile-nav-divider" />
+
+                    {isAuthenticated && (
+                      <div
+                        style={{
+                          padding: '8px 16px',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          color: 'var(--espresso)',
+                          borderBottom: '1px solid var(--almond)',
+                          marginBottom: '4px',
+                        }}
+                      >
+                        Hi, {user?.first_name}
+                      </div>
+                    )}
+                    {!isAuthenticated ? (
+                      <button
+                        className="mobile-nav-item"
+                        onClick={() => {
+                          setIsLoginOpen(true);
+                          setIsMobileMenuOpen(false);
+                        }}
+                      >
+                        <UserIcon className="h-5 w-5" aria-hidden />
+                        Sign In
+                      </button>
+                    ) : (
+                      <button
+                        className="mobile-nav-item"
+                        onClick={() => {
+                          setShowLogoutConfirm(true);
+                          setIsMobileMenuOpen(false);
+                        }}
+                      >
+                        <UserIcon className="h-5 w-5" aria-hidden />
+                        Logout
+                      </button>
+                    )}
+                  </nav>
+
                   <button
-                    className="nav-link"
-                    onClick={() => setIsLoginOpen(true)}
-                    style={{
-                      border: '1px solid var(--almond)',
-                      background: 'var(--velvet-cream)',
-                      cursor: 'pointer',
-                    }}
+                    className="mobile-nav-item justify-center mt-4 text-sm"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    style={{ color: 'var(--cocoa)' }}
                   >
-                    Login
+                    <XMarkIcon className="h-5 w-5" aria-hidden />
+                    Close
                   </button>
-                ) : (
-                  <button
-                    className="nav-link"
-                    onClick={() => setShowLogoutConfirm(true)}
-                    style={{
-                      border: '1px solid var(--almond)',
-                      background: 'var(--velvet-cream)',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Logout
-                  </button>
-                )}
-              </nav>
-            </div>
-          </header>
+                </div>
+              </>
+            )}
 
           <main className="main-content">
             {/* VIEW 1: CUSTOMER CATALOG HOME */}
             {activeView === 'customer-home' && (
               <>
-                <section className="hero-section">
+                <section className="hero-section px-4 sm:px-0">
                   <div className="container">
-                    <h2 className="hero-title">
+                    <h2 className="hero-title text-3xl md:text-4xl lg:text-5xl">
                       Sweet Moments Baked <span>With Love</span>
                     </h2>
-                    <p className="hero-subtitle">
+                    <p className="hero-subtitle text-sm md:text-base lg:text-lg">
                       Explore our premium selection of celebration cakes,
                       dedication cakes, and gourmet French pastries. Custom-made
                       for your sweet indulgence.
                     </p>
 
                     {/* Search and Filters Bar */}
-                    <div className="search-filter-bar">
-                      <div className="search-input-wrapper">
+                    <div className="search-filter-bar flex-col sm:flex-row mx-4 sm:mx-auto">
+                      <div className="search-input-wrapper w-full sm:w-auto">
                         <MagnifyingGlassIcon
                           style={{ width: 18, height: 18 }}
                           aria-hidden
@@ -596,15 +732,16 @@ export default function CustomerApp() {
                         />
                       </div>
                       <div
+                        className="hidden sm:block"
                         style={{
                           height: '24px',
                           width: '1px',
                           backgroundColor: 'var(--almond)',
                         }}
                       ></div>
-                      <div>
+                      <div className="w-full sm:w-auto">
                         <select
-                          className="sort-select"
+                          className="sort-select w-full sm:w-auto"
                           value={sortBy}
                           onChange={(e) => setSortBy(e.target.value)}
                         >
@@ -631,10 +768,10 @@ export default function CustomerApp() {
                 </section>
 
                 {/* Product Catalog Grid */}
-                <section className="catalog-section">
+                <section className="catalog-section px-4 sm:px-0">
                   <div className="container">
-                    <div className="section-header">
-                      <h3 className="section-title">
+                    <div className="section-header flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-0">
+                      <h3 className="section-title text-2xl md:text-3xl">
                         {activeCategory} Selection
                       </h3>
                       <span className="results-count">
@@ -665,7 +802,7 @@ export default function CustomerApp() {
                         description="Try a different category or search term."
                       />
                     ) : (
-                      <div className="product-grid">
+                      <div className="product-grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
                         {filteredProducts.map((product) => (
                           <div
                             key={product.id}
@@ -678,7 +815,7 @@ export default function CustomerApp() {
                                 </span>
                               </div>
                             )}
-                            <div className="card-img-wrapper">
+                            <div className="card-img-wrapper h-40 sm:h-48 md:h-56">
                               <span className="card-badge">
                                 {product.categoryLabel ||
                                   product.category?.name ||
@@ -690,11 +827,11 @@ export default function CustomerApp() {
                                 className="card-img"
                               />
                             </div>
-                            <div className="card-body">
-                              <h4 className="card-title">{product.name}</h4>
+                            <div className="card-body p-4 md:p-6">
+                              <h4 className="card-title text-lg md:text-xl">{product.name}</h4>
                               <p className="card-desc">{product.description}</p>
                               <div className="card-footer">
-                                <span className="card-price">
+                                <span className="card-price text-lg md:text-xl">
                                   {formatPeso(product.price)}
                                   <small
                                     style={{
@@ -732,11 +869,10 @@ export default function CustomerApp() {
             )}
 
             {/* VIEW 2: CUSTOMER ORDERS TRACKING */}
-            {activeView === 'customer-orders' && (
-              <section className="tracking-section">
+            {activeView === 'customer-orders' && (                <section className="tracking-section px-4 sm:px-0">
                 <div className="container" style={{ maxWidth: '900px' }}>
                   <h3
-                    className="section-title"
+                    className="section-title text-2xl md:text-3xl"
                     style={{ marginBottom: '24px' }}
                   >
                     My Orders & Delivery Tracker

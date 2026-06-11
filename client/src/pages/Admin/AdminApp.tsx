@@ -14,6 +14,7 @@ import {
   orderMatchesFilter,
   formatPlacedAt,
   formatScheduledAt,
+  formatUpdatedAt,
 } from '../../utils/mapOrder';
 import { formatDeliveryDateForApi } from '../../utils/checkoutDate';
 import AdminDetailModal from '../../components/admin/AdminDetailModal';
@@ -44,6 +45,7 @@ import {
   CurrencyDollarIcon,
   LightBulbIcon,
   ChartBarIcon,
+  Bars3Icon,
 } from '@heroicons/react/24/outline';
 
 export default function AdminApp() {
@@ -98,6 +100,7 @@ export default function AdminApp() {
   const [togglingProductId, setTogglingProductId] = useState(null);
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
   const [fetchError, setFetchError] = useState(null);
@@ -838,7 +841,7 @@ export default function AdminApp() {
               >
                 A
               </div>
-              <div>
+              <div className="max-sm:hidden">
                 <h1 className="logo-text">Nicai's Admin</h1>
                 <span
                   className="logo-subtitle"
@@ -847,8 +850,14 @@ export default function AdminApp() {
                   Bakery Control Hub
                 </span>
               </div>
+              <div className="sm:hidden">
+                <h1 className="text-lg font-bold font-serif" style={{ color: 'var(--espresso)' }}>
+                  Nicai's
+                </h1>
+              </div>
             </div>
 
+            {/* Desktop navigation - hidden on small screens */}
             <nav className="nav-actions">
               <button
                 className={`nav-link ${activeView === 'admin-dashboard' ? 'active' : ''}`}
@@ -905,6 +914,18 @@ export default function AdminApp() {
                 onMarkAllRead={handleMarkNotificationsRead}
                 onSelectOrder={handleNotificationOrderSelect}
               />
+              {isAuthenticated && (
+                <span
+                  style={{
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: 'var(--cocoa)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Hi, {user?.first_name}
+                </span>
+              )}
               <button
                 type="button"
                 className="nav-link"
@@ -918,17 +939,138 @@ export default function AdminApp() {
                 Logout
               </button>
             </nav>
+
+            {/* Mobile hamburger */}
+            <button
+              className="btn-icon mobile-nav-toggle"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open menu"
+            >
+              <Bars3Icon className="h-6 w-6" aria-hidden />
+            </button>
           </div>
         </header>
+
+        {/* Mobile Navigation Drawer */}
+        {isMobileMenuOpen && (
+          <>
+            <div
+              className="mobile-nav-overlay"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            <div className="mobile-nav-drawer">
+              <div className="mobile-nav-brand">
+                <div
+                  className="logo-icon"
+                  style={{
+                    backgroundColor: 'var(--secondary-light)',
+                    color: 'var(--secondary)',
+                    borderColor: 'var(--secondary)',
+                  }}
+                >
+                  A
+                </div>
+                <div>
+                  <p className="logo-text" style={{ fontSize: 18 }}>
+                    Nicai's Admin
+                  </p>
+                </div>
+              </div>
+
+              <nav className="flex-1 flex flex-col gap-1">
+                <button
+                  className={`mobile-nav-item ${activeView === 'admin-dashboard' ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveView('admin-dashboard');
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <ChartBarIcon className="h-5 w-5" aria-hidden />
+                  Dashboard
+                </button>
+                <button
+                  className={`mobile-nav-item ${activeView === 'admin-orders' ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveView('admin-orders');
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <BellIcon className="h-5 w-5" aria-hidden />
+                  Order Queue
+                  {stats.pending > 0 && (
+                    <span
+                      className="badge"
+                      style={{
+                        backgroundColor: 'var(--secondary)',
+                        color: 'var(--espresso)',
+                        position: 'static',
+                        marginLeft: 'auto',
+                      }}
+                    >
+                      {stats.pending}
+                    </span>
+                  )}
+                </button>
+                <button
+                  className={`mobile-nav-item ${activeView === 'admin-products' ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveView('admin-products');
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <CurrencyDollarIcon className="h-5 w-5" aria-hidden />
+                  Stock Editor
+                </button>
+
+                {isAuthenticated && (
+                  <div
+                    style={{
+                      padding: '8px 16px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: 'var(--espresso)',
+                      borderBottom: '1px solid var(--almond)',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    Hi, {user?.first_name}
+                  </div>
+                )}
+
+                <div className="mobile-nav-divider" />
+
+                <button
+                  className="mobile-nav-item"
+                  onClick={() => {
+                    setShowLogoutConfirm(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  <UserIcon className="h-5 w-5" aria-hidden />
+                  Logout
+                </button>
+              </nav>
+
+              <button
+                className="mobile-nav-item justify-center mt-4 text-sm"
+                onClick={() => setIsMobileMenuOpen(false)}
+                style={{ color: 'var(--cocoa)' }}
+              >
+                <XMarkIcon className="h-5 w-5" aria-hidden />
+                Close
+              </button>
+            </div>
+          </>
+        )}
 
         <main className="main-content">
           {/* VIEW 1: ADMIN ANALYTICS DASHBOARD */}
           {activeView === 'admin-dashboard' && (
-            <section className="admin-layout">
+            <section className="admin-layout px-4 sm:px-0">
               <div className="container">
-                <div className="admin-header-row">
-                  <h2 className="admin-view-title">Operational Overview</h2>
-                  <span
+                <div className="admin-header-row flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <h2 className="admin-view-title text-2xl md:text-3xl lg:text-4xl">Operational Overview</h2>
+                  {/* <span
                     style={{
                       fontSize: '14px',
                       fontWeight: '500',
@@ -937,7 +1079,7 @@ export default function AdminApp() {
                   >
                     Live Status:{' '}
                     {pollStatus === 'connected' ? 'Connected' : 'Reconnecting…'}
-                  </span>
+                  </span> */}
                 </div>
 
                 {fetchError && (
@@ -997,18 +1139,11 @@ export default function AdminApp() {
                 </div>
 
                 {/* Visual SVG chart representation of sales trend */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1.2fr 0.8fr',
-                    gap: '32px',
-                    marginTop: '32px',
-                  }}
-                >
+                <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6 lg:gap-8 mt-8">
                   <div
+                    className="p-4 md:p-6"
                     style={{
                       backgroundColor: 'var(--velvet-cream)',
-                      padding: '24px',
                       borderRadius: '20px',
                       border: '1px solid var(--almond)',
                     }}
@@ -1147,11 +1282,11 @@ export default function AdminApp() {
 
           {/* VIEW 2: ADMIN LIVE ORDERS BOARD & APPROVAL */}
           {activeView === 'admin-orders' && (
-            <section className="admin-layout">
+            <section className="admin-layout px-4 sm:px-0">
               <div className="container" style={{ maxWidth: '1000px' }}>
-                <div className="admin-header-row">
-                  <h2 className="admin-view-title">Order Processing Board</h2>
-                  <span
+                <div className="admin-header-row flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <h2 className="admin-view-title text-2xl md:text-3xl lg:text-4xl">Order Processing Board</h2>
+                  {/* <span
                     style={{
                       fontSize: '14px',
                       color: 'var(--cocoa)',
@@ -1159,7 +1294,7 @@ export default function AdminApp() {
                     }}
                   >
                     Approvals queue updates live.
-                  </span>
+                  </span> */}
                 </div>
 
                 <div className="admin-board">
@@ -1211,8 +1346,12 @@ export default function AdminApp() {
                       </div>
                     ) : (
                       paginatedAdminOrders.map((order) => (
-                        <div key={order.id} className="board-row">
-                          <div className="admin-order-meta">
+                        <div key={order.id} className="board-row flex flex-col sm:grid sm:grid-cols-[minmax(200px,420px)_130px_260px] sm:items-center gap-3">
+                          <div
+                            className="admin-order-meta"
+                            onClick={() => setAdminDetailOrder(order)}
+                            title="View order details"
+                          >
                             <span className="admin-order-id-badge">
                               {order.id}
                             </span>
@@ -1225,18 +1364,24 @@ export default function AdminApp() {
                                 {order.delivery_date
                                   ? ` · Scheduled: ${formatScheduledAt(order)}`
                                   : ''}
+                                {order.status === 'Completed'
+                                  ? ` · Completed: ${formatUpdatedAt(order)}`
+                                  : ''}
+                                {order.status === 'Declined'
+                                  ? ` · Declined: ${formatUpdatedAt(order)}`
+                                  : ''}
                               </span>
                             </div>
                           </div>
-                          <div className="admin-order-actions">
-                            <span
-                              className={`status-badge ${order.status.toLowerCase()}`}
-                              style={{ marginRight: '12px' }}
-                            >
-                              {order.status}
-                            </span>
+                          {/* Status badge column - fixed 130px via grid */}
+                          <span
+                            className={`status-badge ${order.status.toLowerCase()} place-self-center`}
+                          >
+                            {order.status}
+                          </span>
 
-                            {/* Dynamic controls depending on status states! */}
+                          {/* Action buttons column - consistent sizing */}
+                          <div className="admin-order-actions">
                             {order.status === 'Pending' && (
                               <>
                                 <button
@@ -1281,18 +1426,12 @@ export default function AdminApp() {
                               </button>
                             )}
 
-                            {order.status !== 'Pending' && (
+                            {(order.status === 'Completed' || order.status === 'Declined') && (
                               <button
-                                className="btn-sm btn-decline"
+                                className="btn-sm btn-view-details"
                                 onClick={() => setAdminDetailOrder(order)}
-                                style={{
-                                  padding: '6px 12px',
-                                  fontSize: '11px',
-                                  background: 'rgba(42, 29, 25, 0.05)',
-                                  color: 'var(--espresso)',
-                                }}
                               >
-                                Inspect Details
+                                View Details
                               </button>
                             )}
                           </div>
@@ -1378,12 +1517,10 @@ export default function AdminApp() {
 
           {/* VIEW 3: STOCK & INVENTORY EDITOR */}
           {activeView === 'admin-products' && (
-            <section className="admin-layout">
+            <section className="admin-layout px-4 sm:px-0">
               <div className="container">
-                <div className="admin-header-row">
-                  <h2 className="admin-view-title">
-                    Dynamic Product Inventory
-                  </h2>
+                <div className="admin-header-row flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <h2 className="admin-view-title text-2xl md:text-3xl lg:text-4xl">Product Inventory</h2>
                   <div
                     style={{
                       display: 'flex',
@@ -1392,9 +1529,9 @@ export default function AdminApp() {
                       flexWrap: 'wrap',
                     }}
                   >
-                    <span style={{ fontSize: '14px', color: 'var(--cocoa)' }}>
+                    {/* <span style={{ fontSize: '14px', color: 'var(--cocoa)' }}>
                       Modify menu prices and toggle availability in real-time.
-                    </span>
+                    </span> */}
                     <button
                       type="button"
                       className="btn-primary"
@@ -1441,7 +1578,7 @@ export default function AdminApp() {
                         />
                       ) : (
                         products.map((product) => (
-                          <div key={product.id} className="inventory-item-row">
+                          <div key={product.id} className="inventory-item-row flex-col sm:flex-row items-start sm:items-center gap-3">
                             <div className="inventory-item-meta">
                               <img
                                 src={
@@ -1460,7 +1597,7 @@ export default function AdminApp() {
                                 </span>
                               </div>
                             </div>
-                            <div className="inventory-item-controls">
+                            <div className="inventory-item-controls flex-wrap">
                               {/* Edit details */}
                               <button
                                 className="btn-sm btn-review"

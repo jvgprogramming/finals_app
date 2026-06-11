@@ -218,6 +218,15 @@ export function formatSubmittedAt(order: UiOrder): string {
   return formatPlacedAt(order);
 }
 
+/** When the order was last updated (completed/declined timestamp). */
+export function formatUpdatedAt(order: UiOrder): string {
+  const raw = order.raw;
+  if (!raw?.updated_at) return '—';
+  const parts = formatLocalDateParts(raw.updated_at);
+  if (parts.date === '—' || parts.time === '—') return '—';
+  return `${parts.date} at ${parts.time}`;
+}
+
 /** Scheduled pickup/delivery slot label */
 export function formatScheduledAt(order: UiOrder): string {
   if (!order.delivery_date && order.scheduledDate === '—') return '—';

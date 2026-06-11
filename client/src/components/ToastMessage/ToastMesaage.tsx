@@ -24,7 +24,7 @@ const ToastMessage: FC<ToastMessageProps> = ({
   return (
     <>
       <div
-        className={`fixed top-40 right-0 md:right-4 z-999999 flex items-center w-auto max-w-sm p-4 mb-4 text-black ${isFailed?' bg-red-100':' bg-green-100'} rounded-lg shadow-lg transition-opacity duration-300 ${
+        className={`fixed top-40 left-4 right-4 md:left-auto md:right-4 md:w-auto max-w-sm p-4 mb-4 text-black ${isFailed?' bg-red-100':' bg-green-100'} rounded-lg shadow-lg transition-opacity duration-300 z-50 ${
           isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         role="alert"
