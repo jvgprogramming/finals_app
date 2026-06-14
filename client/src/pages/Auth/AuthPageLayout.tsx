@@ -12,7 +12,7 @@ const AuthPageLayout: FC<AuthPageLayoutProps> = ({ children }) => {
           <div className="auth-hero-glow auth-hero-glow-one" />
           <div className="auth-hero-glow auth-hero-glow-two" />
           <div className="auth-hero-content">
-            <p className="auth-eyebrow">Nicais Pastry</p>
+            <p className="auth-eyebrow">Nikays Pastry</p>
             <h1 className="auth-hero-title">
               A warmer way to manage your bakery operations.
             </h1>

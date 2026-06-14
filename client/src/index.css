@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /* ==========================================================================
-   Nicai's Pastry - Confectionery Custom Design System & CSS Library
+   Nikay's Pastry - Confectionery Custom Design System & CSS Library
    Inspired by Vick Cakes Visual Identity (Behance Reference)
    ========================================================================== */
 
@@ -1850,8 +1850,6 @@ h6 {
   border-color: var(--cocoa);
   color: var(--espresso);
 }
-
-
 
 /* Admin buttons */
 .btn-sm {

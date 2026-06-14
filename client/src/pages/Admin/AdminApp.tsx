@@ -56,10 +56,14 @@ export default function AdminApp() {
 
   // UI Interactive States
   const [, setIsCheckoutOpen] = useState(false); // Checkout dialog toggle
-  const [adminDetailOrder, setAdminDetailOrder] = useState<UiOrder | null>(null); // Admin inspect order details
+  const [adminDetailOrder, setAdminDetailOrder] = useState<UiOrder | null>(
+    null,
+  ); // Admin inspect order details
 
   // Toast notifications for Admin in real time
-  const [toasts, setToasts] = useState<Array<{ id: number; text: string; type: string; data: unknown }>>([]);
+  const [toasts, setToasts] = useState<
+    Array<{ id: number; text: string; type: string; data: unknown }>
+  >([]);
   const [shakingBell, setShakingBell] = useState(false);
 
   // Search & Catalog Filter states
@@ -90,7 +94,9 @@ export default function AdminApp() {
     is_available: true,
     image: null,
   });
-  const [togglingProductId, setTogglingProductId] = useState<number | null>(null);
+  const [togglingProductId, setTogglingProductId] = useState<number | null>(
+    null,
+  );
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -233,7 +239,10 @@ export default function AdminApp() {
       try {
         const notificationsResult =
           await NotificationService.getNotifications();
-        setNotifications((notificationsResult.data || notificationsResult) as AppNotification[]);
+        setNotifications(
+          (notificationsResult.data ||
+            notificationsResult) as AppNotification[],
+        );
       } catch (err) {
         console.error('Error fetching notifications:', err);
       }
@@ -283,7 +292,8 @@ export default function AdminApp() {
   const handleAcceptOrder = async (orderId: number) => {
     try {
       const updatedOrder = mapOrderFromApi(
-        (await OrderService.acceptOrder(orderId)) as unknown as Order & Record<string, unknown>,
+        (await OrderService.acceptOrder(orderId)) as unknown as Order &
+          Record<string, unknown>,
       );
 
       setOrders((prev) =>
@@ -312,7 +322,8 @@ export default function AdminApp() {
 
     try {
       const updatedOrder = mapOrderFromApi(
-        (await OrderService.declineOrder(orderId, reason)) as unknown as Order & Record<string, unknown>,
+        (await OrderService.declineOrder(orderId, reason)) as unknown as Order &
+          Record<string, unknown>,
       );
 
       setOrders((prev) =>
@@ -350,7 +361,9 @@ export default function AdminApp() {
           throw new Error(`Unknown status: ${nextStatus}`);
       }
 
-      const mapped = mapOrderFromApi(updatedOrder as unknown as Order & Record<string, unknown>);
+      const mapped = mapOrderFromApi(
+        updatedOrder as unknown as Order & Record<string, unknown>,
+      );
       setOrders((prev) =>
         prev.map((order) => (order.id === mapped.id ? mapped : order)),
       );
@@ -696,7 +709,7 @@ export default function AdminApp() {
                 A
               </div>
               <div className="max-sm:hidden">
-                <h1 className="logo-text">Nicai's Admin</h1>
+                <h1 className="logo-text">Nikay's Admin</h1>
                 <span
                   className="logo-subtitle"
                   style={{ color: 'var(--secondary)' }}
@@ -709,7 +722,7 @@ export default function AdminApp() {
                   className="text-lg font-bold font-serif"
                   style={{ color: 'var(--espresso)' }}
                 >
-                  Nicai's
+                  Nikay's
                 </h1>
               </div>
             </div>
@@ -829,7 +842,7 @@ export default function AdminApp() {
                 </div>
                 <div>
                   <p className="logo-text" style={{ fontSize: 18 }}>
-                    Nicai's Admin
+                    Nikay's Admin
                   </p>
                 </div>
               </div>

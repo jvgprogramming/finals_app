@@ -21,7 +21,11 @@ export default function AdminLayout() {
         style={{ borderBottomColor: 'var(--secondary)' }}
       >
         <div className="container header-inner">
-          <NavLink to="/admin" className="logo-link" style={{ textDecoration: 'none' }}>
+          <NavLink
+            to="/admin"
+            className="logo-link"
+            style={{ textDecoration: 'none' }}
+          >
             <div
               className="logo-icon"
               style={{
@@ -33,8 +37,11 @@ export default function AdminLayout() {
               A
             </div>
             <div>
-              <h1 className="logo-text">Nicai&apos;s Admin</h1>
-              <span className="logo-subtitle" style={{ color: 'var(--secondary)' }}>
+              <h1 className="logo-text">Nikay&apos;s Admin</h1>
+              <span
+                className="logo-subtitle"
+                style={{ color: 'var(--secondary)' }}
+              >
                 Bakery Control Hub
               </span>
             </div>

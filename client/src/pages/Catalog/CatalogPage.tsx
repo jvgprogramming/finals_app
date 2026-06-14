@@ -23,14 +23,14 @@ const CatalogPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Fetch both categories and products
         const [fetchedCategories, fetchedProducts] = await Promise.all([
           ProductService.getCategories(),
           ProductService.getProducts(),
         ]);
 
-        setCategories(['All', ...fetchedCategories.map(c => c.name)]);
+        setCategories(['All', ...fetchedCategories.map((c) => c.name)]);
         setProducts(fetchedProducts);
       } catch (err) {
         console.error('Error fetching catalog data:', err);
@@ -63,8 +63,10 @@ const CatalogPage: React.FC = () => {
     <div className="catalog-page container">
       <header className="catalog-hero">
         <div>
-          <h1>Nicai's Pastry</h1>
-          <p className="lead">Premium confectionery for your sweetest moments.</p>
+          <h1>Nikay's Pastry</h1>
+          <p className="lead">
+            Premium confectionery for your sweetest moments.
+          </p>
         </div>
         <div className="catalog-cta">
           <button
@@ -88,7 +90,10 @@ const CatalogPage: React.FC = () => {
           />
         </div>
         <div className="filters">
-          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
             {categories.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -99,16 +104,11 @@ const CatalogPage: React.FC = () => {
       </section>
 
       <section className="product-grid">
-        {loading && (
-          <LoadingSpinner label="Loading products…" />
-        )}
+        {loading && <LoadingSpinner label="Loading products…" />}
         {error && (
           <div className="error-state">
             <p>{error}</p>
-            <button 
-              className="btn-sm" 
-              onClick={() => window.location.reload()}
-            >
+            <button className="btn-sm" onClick={() => window.location.reload()}>
               Retry
             </button>
           </div>
@@ -121,7 +121,9 @@ const CatalogPage: React.FC = () => {
         {filtered.map((p) => (
           <article key={p.id} className="product-card">
             <img
-              src={resolveProductImageUrl(p.image_url) || '/images/placeholder.png'}
+              src={
+                resolveProductImageUrl(p.image_url) || '/images/placeholder.png'
+              }
               alt={p.name}
               className="product-thumb"
             />

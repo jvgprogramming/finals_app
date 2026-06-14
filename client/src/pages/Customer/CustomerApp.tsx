@@ -465,127 +465,74 @@ export default function CustomerApp() {
          CUSTOMER PORTAL SHELL
          ========================================================================== */}
       {activeView.startsWith('customer') && (
-        <>            <header className="glass-header">
-              <div className="container header-inner">
-                <div
-                  className="logo-link"
-                  onClick={() => setActiveView('customer-home')}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className="logo-icon">N</div>
-                  <div className="max-sm:hidden">
-                    <h1 className="logo-text">Nicai's Pastry</h1>
-                    <span className="logo-subtitle">Premium Confeitaria</span>
-                  </div>
-                  <div className="sm:hidden">
-                    <h1 className="text-lg font-bold font-serif">Nicai's</h1>
-                  </div>
+        <>
+          {' '}
+          <header className="glass-header">
+            <div className="container header-inner">
+              <div
+                className="logo-link"
+                onClick={() => setActiveView('customer-home')}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="logo-icon">N</div>
+                <div className="max-sm:hidden">
+                  <h1 className="logo-text">Nikay's Pastry</h1>
+                  <span className="logo-subtitle">Premium Confeitaria</span>
                 </div>
+                <div className="sm:hidden">
+                  <h1 className="text-lg font-bold font-serif">Nikay's</h1>
+                </div>
+              </div>
 
-                {/* Desktop navigation - hidden on small screens */}
-                <nav className="nav-actions">
-                  <button
-                    className={`nav-link ${activeView === 'customer-home' ? 'active' : ''}`}
-                    onClick={() => setActiveView('customer-home')}
-                    style={{
-                      border: 'none',
-                      background: 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Cake Menu
-                  </button>
-                  <button
-                    className={`nav-link ${activeView === 'customer-orders' ? 'active' : ''}`}
-                    onClick={() => setActiveView('customer-orders')}
-                    style={{
-                      border: 'none',
-                      background: 'none',
-                      cursor: 'pointer',
-                      position: 'relative',
-                    }}
-                  >
-                    My Orders
-                    {unreadNotifCount > 0 && (
-                      <span
-                        className="badge"
-                        style={{ top: '-2px', right: '-12px' }}
-                      >
-                        {unreadNotifCount}
-                      </span>
-                    )}
-                  </button>
-
-                  {isAuthenticated && (
-                    <NotificationPanel
-                      notifications={notifications}
-                      isOpen={isNotifPanelOpen}
-                      shaking={shakingBell}
-                      onToggle={() => setIsNotifPanelOpen((v) => !v)}
-                      onMarkAllRead={handleMarkNotificationsRead}
-                      onSelectOrder={handleNotificationOrderSelect}
-                    />
-                  )}
-
-                  {/* Cart Action */}
-                  <button
-                    className="btn-icon"
-                    onClick={() => setIsCartOpen(true)}
-                  >
-                    <ShoppingCartIcon
-                      style={{ width: 20, height: 20 }}
-                      aria-hidden
-                    />
-                    {cart.length > 0 && (
-                      <span className="badge">
-                        {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                      </span>
-                    )}
-                  </button>
-                  {isAuthenticated && (
+              {/* Desktop navigation - hidden on small screens */}
+              <nav className="nav-actions">
+                <button
+                  className={`nav-link ${activeView === 'customer-home' ? 'active' : ''}`}
+                  onClick={() => setActiveView('customer-home')}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cake Menu
+                </button>
+                <button
+                  className={`nav-link ${activeView === 'customer-orders' ? 'active' : ''}`}
+                  onClick={() => setActiveView('customer-orders')}
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                  }}
+                >
+                  My Orders
+                  {unreadNotifCount > 0 && (
                     <span
-                      style={{
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        color: 'var(--cocoa)',
-                        whiteSpace: 'nowrap',
-                      }}
+                      className="badge"
+                      style={{ top: '-2px', right: '-12px' }}
                     >
-                      Hi, {user?.first_name}
+                      {unreadNotifCount}
                     </span>
                   )}
-                  {!isAuthenticated ? (
-                    <button
-                      className="nav-link"
-                      onClick={() => setIsLoginOpen(true)}
-                      style={{
-                        border: '1px solid var(--almond)',
-                        background: 'var(--velvet-cream)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Login
-                    </button>
-                  ) : (
-                    <button
-                      className="nav-link"
-                      onClick={() => setShowLogoutConfirm(true)}
-                      style={{
-                        border: '1px solid var(--almond)',
-                        background: 'var(--velvet-cream)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Logout
-                    </button>
-                  )}
-                </nav>
+                </button>
 
-                {/* Mobile cart icon */}
+                {isAuthenticated && (
+                  <NotificationPanel
+                    notifications={notifications}
+                    isOpen={isNotifPanelOpen}
+                    shaking={shakingBell}
+                    onToggle={() => setIsNotifPanelOpen((v) => !v)}
+                    onMarkAllRead={handleMarkNotificationsRead}
+                    onSelectOrder={handleNotificationOrderSelect}
+                  />
+                )}
+
+                {/* Cart Action */}
                 <button
-                  className="btn-icon mobile-nav-toggle"
+                  className="btn-icon"
                   onClick={() => setIsCartOpen(true)}
-                  aria-label="Open cart"
                 >
                   <ShoppingCartIcon
                     style={{ width: 20, height: 20 }}
@@ -597,110 +544,171 @@ export default function CustomerApp() {
                     </span>
                   )}
                 </button>
+                {isAuthenticated && (
+                  <span
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      color: 'var(--cocoa)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Hi, {user?.first_name}
+                  </span>
+                )}
+                {!isAuthenticated ? (
+                  <button
+                    className="nav-link"
+                    onClick={() => setIsLoginOpen(true)}
+                    style={{
+                      border: '1px solid var(--almond)',
+                      background: 'var(--velvet-cream)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Login
+                  </button>
+                ) : (
+                  <button
+                    className="nav-link"
+                    onClick={() => setShowLogoutConfirm(true)}
+                    style={{
+                      border: '1px solid var(--almond)',
+                      background: 'var(--velvet-cream)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Logout
+                  </button>
+                )}
+              </nav>
 
-                {/* Mobile hamburger */}
+              {/* Mobile cart icon */}
+              <button
+                className="btn-icon mobile-nav-toggle"
+                onClick={() => setIsCartOpen(true)}
+                aria-label="Open cart"
+              >
+                <ShoppingCartIcon
+                  style={{ width: 20, height: 20 }}
+                  aria-hidden
+                />
+                {cart.length > 0 && (
+                  <span className="badge">
+                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                  </span>
+                )}
+              </button>
+
+              {/* Mobile hamburger */}
+              <button
+                className="btn-icon mobile-nav-toggle"
+                onClick={() => setIsMobileMenuOpen(true)}
+                aria-label="Open menu"
+              >
+                <Bars3Icon className="h-6 w-6" aria-hidden />
+              </button>
+            </div>
+          </header>
+          {/* Mobile Navigation Drawer */}
+          {isMobileMenuOpen && (
+            <>
+              <div
+                className="mobile-nav-overlay"
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+              <div className="mobile-nav-drawer">
+                <div className="mobile-nav-brand">
+                  <div className="logo-icon">N</div>
+                  <div>
+                    <p className="logo-text" style={{ fontSize: 18 }}>
+                      Nikay's Pastry
+                    </p>
+                  </div>
+                </div>
+
+                <nav className="flex-1 flex flex-col gap-1">
+                  <button
+                    className={`mobile-nav-item ${activeView === 'customer-home' ? 'active' : ''}`}
+                    onClick={() => {
+                      setActiveView('customer-home');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    <MagnifyingGlassIcon className="h-5 w-5" aria-hidden />
+                    Cake Menu
+                  </button>
+                  <button
+                    className={`mobile-nav-item ${activeView === 'customer-orders' ? 'active' : ''}`}
+                    onClick={() => {
+                      setActiveView('customer-orders');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    <BellIcon className="h-5 w-5" aria-hidden />
+                    My Orders
+                    {unreadNotifCount > 0 && (
+                      <span
+                        className="badge"
+                        style={{ position: 'static', marginLeft: 'auto' }}
+                      >
+                        {unreadNotifCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <div className="mobile-nav-divider" />
+
+                  {isAuthenticated && (
+                    <div
+                      style={{
+                        padding: '8px 16px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: 'var(--espresso)',
+                        borderBottom: '1px solid var(--almond)',
+                        marginBottom: '4px',
+                      }}
+                    >
+                      Hi, {user?.first_name}
+                    </div>
+                  )}
+                  {!isAuthenticated ? (
+                    <button
+                      className="mobile-nav-item"
+                      onClick={() => {
+                        setIsLoginOpen(true);
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <UserIcon className="h-5 w-5" aria-hidden />
+                      Sign In
+                    </button>
+                  ) : (
+                    <button
+                      className="mobile-nav-item"
+                      onClick={() => {
+                        setShowLogoutConfirm(true);
+                        setIsMobileMenuOpen(false);
+                      }}
+                    >
+                      <UserIcon className="h-5 w-5" aria-hidden />
+                      Logout
+                    </button>
+                  )}
+                </nav>
+
                 <button
-                  className="btn-icon mobile-nav-toggle"
-                  onClick={() => setIsMobileMenuOpen(true)}
-                  aria-label="Open menu"
+                  className="mobile-nav-item justify-center mt-4 text-sm"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  style={{ color: 'var(--cocoa)' }}
                 >
-                  <Bars3Icon className="h-6 w-6" aria-hidden />
+                  <XMarkIcon className="h-5 w-5" aria-hidden />
+                  Close
                 </button>
               </div>
-            </header>
-
-            {/* Mobile Navigation Drawer */}
-            {isMobileMenuOpen && (
-              <>
-                <div className="mobile-nav-overlay" onClick={() => setIsMobileMenuOpen(false)} />
-                <div className="mobile-nav-drawer">
-                  <div className="mobile-nav-brand">
-                    <div className="logo-icon">N</div>
-                    <div>
-                      <p className="logo-text" style={{ fontSize: 18 }}>Nicai's Pastry</p>
-                    </div>
-                  </div>
-
-                  <nav className="flex-1 flex flex-col gap-1">
-                    <button
-                      className={`mobile-nav-item ${activeView === 'customer-home' ? 'active' : ''}`}
-                      onClick={() => {
-                        setActiveView('customer-home');
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      <MagnifyingGlassIcon className="h-5 w-5" aria-hidden />
-                      Cake Menu
-                    </button>
-                    <button
-                      className={`mobile-nav-item ${activeView === 'customer-orders' ? 'active' : ''}`}
-                      onClick={() => {
-                        setActiveView('customer-orders');
-                        setIsMobileMenuOpen(false);
-                      }}
-                    >
-                      <BellIcon className="h-5 w-5" aria-hidden />
-                      My Orders
-                      {unreadNotifCount > 0 && (
-                        <span className="badge" style={{ position: 'static', marginLeft: 'auto' }}>
-                          {unreadNotifCount}
-                        </span>
-                      )}
-                    </button>
-
-                    <div className="mobile-nav-divider" />
-
-                    {isAuthenticated && (
-                      <div
-                        style={{
-                          padding: '8px 16px',
-                          fontSize: '14px',
-                          fontWeight: 600,
-                          color: 'var(--espresso)',
-                          borderBottom: '1px solid var(--almond)',
-                          marginBottom: '4px',
-                        }}
-                      >
-                        Hi, {user?.first_name}
-                      </div>
-                    )}
-                    {!isAuthenticated ? (
-                      <button
-                        className="mobile-nav-item"
-                        onClick={() => {
-                          setIsLoginOpen(true);
-                          setIsMobileMenuOpen(false);
-                        }}
-                      >
-                        <UserIcon className="h-5 w-5" aria-hidden />
-                        Sign In
-                      </button>
-                    ) : (
-                      <button
-                        className="mobile-nav-item"
-                        onClick={() => {
-                          setShowLogoutConfirm(true);
-                          setIsMobileMenuOpen(false);
-                        }}
-                      >
-                        <UserIcon className="h-5 w-5" aria-hidden />
-                        Logout
-                      </button>
-                    )}
-                  </nav>
-
-                  <button
-                    className="mobile-nav-item justify-center mt-4 text-sm"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    style={{ color: 'var(--cocoa)' }}
-                  >
-                    <XMarkIcon className="h-5 w-5" aria-hidden />
-                    Close
-                  </button>
-                </div>
-              </>
-            )}
-
+            </>
+          )}
           <main className="main-content">
             {/* VIEW 1: CUSTOMER CATALOG HOME */}
             {activeView === 'customer-home' && (
@@ -828,7 +836,9 @@ export default function CustomerApp() {
                               />
                             </div>
                             <div className="card-body p-4 md:p-6">
-                              <h4 className="card-title text-lg md:text-xl">{product.name}</h4>
+                              <h4 className="card-title text-lg md:text-xl">
+                                {product.name}
+                              </h4>
                               <p className="card-desc">{product.description}</p>
                               <div className="card-footer">
                                 <span className="card-price text-lg md:text-xl">
@@ -869,7 +879,8 @@ export default function CustomerApp() {
             )}
 
             {/* VIEW 2: CUSTOMER ORDERS TRACKING */}
-            {activeView === 'customer-orders' && (                <section className="tracking-section px-4 sm:px-0">
+            {activeView === 'customer-orders' && (
+              <section className="tracking-section px-4 sm:px-0">
                 <div className="container" style={{ maxWidth: '900px' }}>
                   <h3
                     className="section-title text-2xl md:text-3xl"
@@ -1891,7 +1902,7 @@ function CheckoutModal({
                         color: 'var(--cocoa)',
                       }}
                     >
-                      Nicai's Pastry
+                      Nikay's Pastry
                       <br />
                       Plaridel St., Roxas City, Capiz
                     </p>
