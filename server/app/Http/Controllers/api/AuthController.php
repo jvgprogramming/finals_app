@@ -76,6 +76,7 @@ class AuthController extends Controller
                 Http::post(
                     'http://localhost:5678/webhook/register-user',
                     [
+                        'id' => $user->id,
                         'first_name' => $user->first_name,
                         'last_name' => $user->last_name,
                         'username' => $user->username,
@@ -101,7 +102,7 @@ class AuthController extends Controller
         }
     }
 
-    
+
 
     /**
      * Logout endpoint.

@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Http;
 
 class OrderController extends Controller
 {
@@ -331,6 +332,17 @@ class OrderController extends Controller
 
             $order->status = 'ready';
             $order->save();
+
+            try {
+                Http::post('http://localhost:5678/webhook/order-ready', [
+                    'order_number' => $order->order_number,
+                    'customer_name' => $order->customer_name,
+                    'customer_phone' => $order->customer_phone,
+                    'fulfillment_type' => $order->fulfillment_type,
+                ]);
+            } catch (\Exception $e) {
+                // Don't stop order readiness if n8n is offline
+            }
 
             // Notify customer
             Notification::create([
